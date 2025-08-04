@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AnimeCard from '@/components/AnimeCard';
 import CharacterCard from '@/components/CharacterCard';
@@ -8,7 +8,7 @@ import { Search, Filter, Play, Users, Mic } from 'lucide-react';
 import Loader from '@/components/Loader';
 import { useTheme } from '@/contexts/ThemeContext';
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const { isDark } = useTheme();
@@ -296,5 +296,13 @@ export default function SearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <SearchContent />
+    </Suspense>
   );
 }

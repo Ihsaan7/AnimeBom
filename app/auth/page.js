@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function AuthPage() {
+function AuthForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isSignIn, setIsSignIn] = useState(true);
@@ -270,5 +270,13 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="animate-spin rounded-full h-32 w-32 border-b-2 border-violet-600"></div></div>}>
+      <AuthForm />
+    </Suspense>
   );
 }

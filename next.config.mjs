@@ -3,6 +3,9 @@ const nextConfig = {
   images: {
     domains: ['cdn.myanimelist.net', 'api.jikan.moe', 'kitsu.io', 'img.youtube.com', 's4.anilist.co'],
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

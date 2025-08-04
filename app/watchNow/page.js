@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -20,7 +20,7 @@ const generateUniqueKey = (item, index, prefix = '') => {
   return `${prefix}${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
 
-const WatchNow = () => {
+const WatchNowContent = () => {
   const { isDark } = useTheme()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -708,6 +708,14 @@ const WatchNow = () => {
         </div>
       </div>
     </div>
+  )
+}
+
+const WatchNow = () => {
+  return (
+    <Suspense fallback={<Loader />}>
+      <WatchNowContent />
+    </Suspense>
   )
 }
 

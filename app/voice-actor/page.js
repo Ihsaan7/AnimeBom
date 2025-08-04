@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -8,7 +8,7 @@ import AnimeCard from '../../components/AnimeCard'
 import Loader from '@/components/Loader'
 import { useTheme } from '@/contexts/ThemeContext'
 
-const VoiceActor = () => {
+const VoiceActorContent = () => {
   const { isDark } = useTheme()
   const searchParams = useSearchParams()
   const animeId = searchParams.get('id') || searchParams.get('animeId')
@@ -570,6 +570,14 @@ const VoiceActor = () => {
         </div>
       </div>
     </div>
+  )
+}
+
+const VoiceActor = () => {
+  return (
+    <Suspense fallback={<Loader />}>
+      <VoiceActorContent />
+    </Suspense>
   )
 }
 

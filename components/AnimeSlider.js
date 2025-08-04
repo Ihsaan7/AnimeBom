@@ -35,7 +35,6 @@ const AnimeSlider = ({ animes, favorites, onToggleFavorite, onPlay, onAdd }) => 
 
   return (
     <div className="w-full py-6 px-5">
-      <h2 className=" px-5 text-2xl font-bold mb-4">For You</h2>
       <div
         ref={sliderRef}
         className="flex overflow-x-auto no-scrollbar px-4 gap-2 scrollbar-hide"
