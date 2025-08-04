@@ -348,7 +348,7 @@ const VoiceActorContent = () => {
   if (loading) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
-        <Loader text="Loading Voice Actor" size="text-2xl" />
+        <Loader text="Loading" size="text-2xl" />
       </div>
     )
   }
@@ -446,7 +446,7 @@ const VoiceActorContent = () => {
   }
 
   return (
-    <div className={`min-h-screen px-6 mt-5 transition-colors ${
+    <div className={`min-h-screen px-6 mt- transition-colors ${
       isDark ? 'bg-gray-900' : 'bg-gray-50'
     }`}>
       {/* Header Section */}
