@@ -254,18 +254,26 @@ const VoiceActorContent = () => {
       })
       
       if (!response.ok) {
-        throw new Error('Failed to fetch anime data from AniList')
+        console.warn(`AniList API returned ${response.status}: ${response.statusText}`);
+        throw new Error(`Failed to fetch anime data from AniList (${response.status})`)
       }
       
       const data = await response.json()
       
       if (data.errors) {
+        console.warn('AniList GraphQL errors:', data.errors);
         throw new Error(data.errors[0]?.message || 'GraphQL query failed')
       }
       
       const media = data.data?.Media
       if (!media) {
-        throw new Error('Anime not found')
+        console.warn(`No anime found for ID: ${anilistId}`);
+        throw new Error('Anime not found - using default data')
+      }
+      
+      if (!media.characters || !media.characters.edges || media.characters.edges.length === 0) {
+        console.warn(`No characters found for anime ID: ${anilistId}`);
+        throw new Error('No character data available - using default data')
       }
       
       // Transform the data to match our component structure
