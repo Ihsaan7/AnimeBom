@@ -55,7 +55,7 @@ const TopCharacterPage = () => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen  flex items-center justify-center ${
+      <div className={`min-h-screen -mt-2 flex items-center justify-center ${
         isDark ? 'bg-black' : 'bg-white'
       }`}>
         <GlitchLoader />
@@ -207,7 +207,7 @@ const TopCharacterPage = () => {
              <button
                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                disabled={currentPage === totalPages}
-               className={`px-3 py-1 border font-bold rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b24dc8] hover:text-white hover:border-none hover:cursor-pointer transition-colors ${
+               className={`px-1 md:px-3 py-1 border font-bold rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b24dc8] hover:text-white hover:border-none hover:cursor-pointer transition-colors ${
                  isDark ? 'bg-gray-800 border-gray-600 text-gray-300' : 'bg-white border-gray-400 text-gray-400'
                }`}
              >

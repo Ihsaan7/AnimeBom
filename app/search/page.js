@@ -30,17 +30,31 @@ function SearchContent() {
       // Fetch anime results
       const animeResponse = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(searchTerm)}&limit=20`);
       const animeData = await animeResponse.json();
-      setAnimeResults(animeData.data || []);
+      // Sort anime by score and popularity (most relevant first)
+      const sortedAnime = (animeData.data || []).sort((a, b) => {
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
+        const membersA = a.members || 0;
+        const membersB = b.members || 0;
+        // Primary sort by score, secondary by member count
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return membersB - membersA;
+      });
+      setAnimeResults(sortedAnime);
 
       // Fetch character results
       const characterResponse = await fetch(`https://api.jikan.moe/v4/characters?q=${encodeURIComponent(searchTerm)}&limit=20`);
       const characterData = await characterResponse.json();
-      setCharacterResults(characterData.data || []);
+      // Sort characters by favorites count (most popular first)
+      const sortedCharacters = (characterData.data || []).sort((a, b) => (b.favorites || 0) - (a.favorites || 0));
+      setCharacterResults(sortedCharacters);
 
       // Fetch voice actor results (people)
       const voiceActorResponse = await fetch(`https://api.jikan.moe/v4/people?q=${encodeURIComponent(searchTerm)}&limit=20`);
       const voiceActorData = await voiceActorResponse.json();
-      setVoiceActorResults(voiceActorData.data || []);
+      // Sort voice actors by favorites count (most popular first)
+      const sortedVoiceActors = (voiceActorData.data || []).sort((a, b) => (b.favorites || 0) - (a.favorites || 0));
+      setVoiceActorResults(sortedVoiceActors);
     } catch (error) {
       console.error('Error fetching search results:', error);
     } finally {
@@ -106,7 +120,13 @@ function SearchContent() {
       {characterResults.map((character, index) => (
         <CharacterCard
           key={`search-character-${character.mal_id}-${index}`}
-          character={character}
+          image={character.images?.jpg?.image_url || '/placeholder-person.svg'}
+          name={character.name}
+          seriesCount={character.anime?.length || 0}
+          onClick={() => {
+            // Navigate to character page
+            window.open(`/character/${character.mal_id}`, '_blank');
+          }}
         />
       ))}
     </div>
@@ -115,7 +135,16 @@ function SearchContent() {
   const renderVoiceActorResults = () => (
     <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
       {voiceActorResults.map((person, index) => (
-        <div key={`search-va-${person.mal_id}-${index}`} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+        <div 
+          key={`search-va-${person.mal_id}-${index}`} 
+          className={`rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${
+            isDark ? 'bg-gray-800' : 'bg-white'
+          }`}
+          onClick={() => {
+            // Navigate to voice actor page
+            window.open(`/voice-actor?id=${person.mal_id}`, '_blank');
+          }}
+        >
           <div className="aspect-[3/4] relative">
             <img
               src={person.images?.jpg?.image_url || '/placeholder-person.svg'}
@@ -127,12 +156,18 @@ function SearchContent() {
             />
           </div>
           <div className="p-3">
-            <h3 className="font-semibold text-sm mb-1 line-clamp-2">{person.name}</h3>
+            <h3 className={`font-semibold text-sm mb-1 line-clamp-2 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>{person.name}</h3>
             {person.given_name && (
-              <p className="text-xs text-gray-600 mb-1">{person.given_name}</p>
+              <p className={`text-xs mb-1 ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>{person.given_name}</p>
             )}
             {person.birthday && (
-              <p className="text-xs text-gray-500">Born: {new Date(person.birthday).toLocaleDateString()}</p>
+              <p className={`text-xs ${
+                isDark ? 'text-gray-500' : 'text-gray-500'
+              }`}>Born: {new Date(person.birthday).toLocaleDateString()}</p>
             )}
           </div>
         </div>
@@ -181,7 +216,7 @@ function SearchContent() {
    };
 
   return (
-    <div className={`min-h-screen pt-20 pb-8 transition-colors ${
+    <div className={`min-h-screen -mt-2 pt-20 pb-8 transition-colors ${
       isDark ? 'bg-gray-900' : 'bg-gray-50'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -227,7 +262,7 @@ function SearchContent() {
           <div className={`rounded-xl p-2 shadow-sm border transition-colors ${
             isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
           }`}>
-            <nav className="flex space-x-1">
+            <nav className="flex flex-wrap gap-1">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
                 return (

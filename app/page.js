@@ -192,7 +192,7 @@ export default function HomePage() {
         </div>
         {loading && trendingAnimes.length === 0 ? (
           <div className="flex justify-center items-center h-64">
-            <Loader text="Loading Trending" size="text-xl" className="h-64" />
+            <Loader text="Loading " size="text-xl" className="h-64" />
           </div>
         ) : trendingAnimes.length === 0 ? (
           <div className="text-center py-8">
@@ -248,7 +248,7 @@ export default function HomePage() {
         
         {loading && topRatedAnimes.length === 0 ? (
           <div className="flex justify-center items-center h-64">
-            <Loader text="Loading Top Rated" size="text-xl" className="h-64" />
+            <Loader text="Loading " size="text-xl" className="h-64" />
           </div>
         ) : topRatedAnimes.length === 0 ? (
           <div className="text-center py-8">

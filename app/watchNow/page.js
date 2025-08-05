@@ -302,7 +302,7 @@ const WatchNowContent = () => {
 
   if (loading) {
     return (
-      <div className='min-h-screen flex items-center justify-center'>
+      <div className='min-h-screen w-[100vw] -mt-2 flex items-center justify-center transition-colors'>
         <Loader text="Loading " size="text-2xl" />
       </div>
     )

@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import AnimeCard from '@/components/AnimeCard';
 import { ArrowUpDown, Filter, Calendar } from 'lucide-react';
 import Loader from '@/components/Loader';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function TopAnimePage() {
+  const { isDark } = useTheme();
   const [animes, setAnimes] = useState([]);
   const [allAnimes, setAllAnimes] = useState([]); // Store all fetched anime
   const [page, setPage] = useState(1);
@@ -124,18 +126,36 @@ export default function TopAnimePage() {
       return 0;
     });
 
+  if (loading) {
+    return (
+      <div className={`min-h-screen -mt-2 flex justify-center items-center transition-colors ${
+        isDark ? 'bg-gray-900' : 'bg-white'
+      }`}>
+        <Loader text="Loading" size="text-2xl" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-white py-4 sm:py-8 px-4 sm:px-5 mt-20">
+    <div className={`min-h-screen -mt-2 py-4 sm:py-8 px-4 sm:px-5 pt-20 transition-colors ${
+      isDark ? 'bg-gray-900' : 'bg-white'
+    }`}>
       <div className="max-w-7xl mx-auto ">
         <div className=" flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8 space-y-4 sm:space-y-0">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black text-center sm:text-left">Top Anime by Year & Season</h1>
+          <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold text-center sm:text-left ${
+            isDark ? 'text-white' : 'text-black'
+          }`}>Top Anime by Year & Season</h1>
           <div className=" flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <div className="flex items-center space-x-1">
-              <Calendar className="w-4 h-4 text-gray-600" />
+              <Calendar className={`w-4 h-4 ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`} />
               <select 
                 onChange={handleYearChange} 
                 value={selectedYear} 
-                className="bg-white border text-sm text-black px-2 sm:px-3 py-1 rounded-sm font-bold hover:cursor-pointer hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200 min-w-[80px]"
+                className={`border text-sm px-2 sm:px-3 py-1 rounded-sm font-bold hover:cursor-pointer hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200 min-w-[80px] ${
+                  isDark ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-black border-gray-300'
+                }`}
               >
                 {years.map(year => (
                   <option key={year} value={year}>{year}</option>
@@ -143,11 +163,15 @@ export default function TopAnimePage() {
               </select>
             </div>
             <div className="flex items-center space-x-1">
-              <Filter className="w-4 h-4 text-gray-600" />
+              <Filter className={`w-4 h-4 ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`} />
               <select 
                 onChange={handleSeasonChange} 
                 value={selectedSeason} 
-                className="bg-white border rounded-sm font-bold hover:cursor-pointer text-sm text-black px-2 sm:px-3 py-1 hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200 min-w-[90px]"
+                className={`border rounded-sm font-bold hover:cursor-pointer text-sm px-2 sm:px-3 py-1 hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200 min-w-[90px] ${
+                  isDark ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-black border-gray-300'
+                }`}
               >
                 <option value="winter">Winter</option>
                 <option value="spring">Spring</option>
@@ -156,11 +180,15 @@ export default function TopAnimePage() {
               </select>
             </div>
             <div className="flex items-center space-x-1">
-              <ArrowUpDown className="w-4 h-4 text-gray-600" />
+              <ArrowUpDown className={`w-4 h-4 ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`} />
               <select 
                 onChange={handleSortChange} 
                 value={sortBy} 
-                className="bg-white border text-sm text-black px-2 sm:px-3 py-1 rounded-sm font-bold hover:cursor-pointer hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200 min-w-[100px]"
+                className={`border text-sm px-2 sm:px-3 py-1 rounded-sm font-bold hover:cursor-pointer hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200 min-w-[100px] ${
+                  isDark ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-black border-gray-300'
+                }`}
               >
                 <option value="score">Sort: Score</option>
                 <option value="popularity">Popularity</option>
@@ -170,17 +198,15 @@ export default function TopAnimePage() {
           </div>
         </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-96 bg-white">
-          <Loader text="Loading" size="text-2xl" />
-        </div>
-      ) : (
-        <>
-          {animes.length === 0 ? (
+      {animes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="text-6xl mb-4">📅</div>
-              <h3 className="text-2xl font-bold text-gray-700 mb-2">No Anime Found</h3>
-              <p className="text-gray-500 text-center max-w-md">
+              <h3 className={`text-2xl font-bold mb-2 ${
+                isDark ? 'text-gray-300' : 'text-gray-700'
+              }`}>No Anime Found</h3>
+              <p className={`text-center max-w-md ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 There are no anime available for {selectedYear} {selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} season. Try selecting a different year or season!
               </p>
             </div>
@@ -200,8 +226,6 @@ export default function TopAnimePage() {
               </div>
             </>
           )}
-        </>
-      )}
 
         {(() => {
           const itemsPerPage = 25;
