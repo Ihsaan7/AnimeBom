@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import AnimeCard from '@/components/AnimeCard';
 import { ArrowUpDown, Filter } from 'lucide-react';
 import Loader from '@/components/Loader';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function TopRatedPage() {
+  const { isDark } = useTheme();
   const [animes, setAnimes] = useState([]);
   const [allAnimes, setAllAnimes] = useState([]); // Store all fetched anime
   const [page, setPage] = useState(1);
@@ -120,22 +122,46 @@ export default function TopRatedPage() {
     });
 
   return (
-    <div className="min-h-screen bg-white py-8 pr-5 mt-10">
-      <div className="max-w-7xl mx-auto px-10">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-black">Top Rated Anime</h1>
-          <div className="flex items-center space-x-3">
+    <div className={`min-h-screen py-8 pr-5 -mt-2 pt-10 transition-colors ${
+      isDark ? 'bg-gray-900' : 'bg-white'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
+          <h1 className={`text-2xl font-bold ${
+            isDark ? 'text-white' : 'text-black'
+          }`}>Top Rated Anime</h1>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center space-x-1">
-              <ArrowUpDown className="w-4 h-4 text-gray-600" />
-              <select onChange={handleSortChange} value={sortBy} className="bg-white border text-sm text-black px-3 py-1 rounded-sm font-bold hover:cursor-pointer hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200">
+              <ArrowUpDown className={`w-4 h-4 ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`} />
+              <select 
+                onChange={handleSortChange} 
+                value={sortBy} 
+                className={`border text-sm px-3 py-1 rounded-sm font-bold hover:cursor-pointer hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200 min-w-0 ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-600 text-gray-300' 
+                    : 'bg-white border-gray-300 text-black'
+                }`}
+              >
                 <option value="score">Sort: Score</option>
                 <option value="popularity">Popularity</option>
                 <option value="rank">Rank</option>
               </select>
             </div>
             <div className="flex items-center space-x-1">
-              <Filter className="w-4 h-4 text-gray-600" />
-              <select onChange={handleFormatChange} value={format} className="bg-white border rounded-sm font-bold hover:cursor-pointer text-sm text-black px-3 py-1 hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200">
+              <Filter className={`w-4 h-4 ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`} />
+              <select 
+                onChange={handleFormatChange} 
+                value={format} 
+                className={`border rounded-sm font-bold hover:cursor-pointer text-sm px-3 py-1 hover:text-white hover:bg-fuchsia-500 focus:outline-none focus:border-purple-400 duration-200 min-w-0 ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-600 text-gray-300' 
+                    : 'bg-white border-gray-300 text-black'
+                }`}
+              >
                 <option value="all">Format: All Formats</option>
                 <option value="tv">TV</option>
                 <option value="movie">Movie</option>
@@ -149,22 +175,28 @@ export default function TopRatedPage() {
         </div>
 
       {loading ? (
-        <div className="flex justify-center items-center h-96 bg-white">
-          <Loader text="Loading Top Rated" size="text-2xl" />
+        <div className={`flex justify-center items-center h-96 ${
+          isDark ? 'bg-gray-900' : 'bg-white'
+        }`}>
+          <Loader text="Loading" size="text-2xl" />
         </div>
       ) : (
         <>
           {animes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="text-6xl mb-4">⭐</div>
-              <h3 className="text-2xl font-bold text-gray-700 mb-2">No Top Rated Anime Found</h3>
-              <p className="text-gray-500 text-center max-w-md">
+              <h3 className={`text-2xl font-bold mb-2 ${
+                isDark ? 'text-gray-300' : 'text-gray-700'
+              }`}>No Top Rated Anime Found</h3>
+              <p className={`text-center max-w-md ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 There are no top-rated anime available on this page. Try checking different filters or come back later!
               </p>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 justify-items-center">
                 {filteredAnimes.slice(0, 16).map((anime, index) => (
                   <AnimeCard 
                     key={`toprated-page-${page}-${index}-${anime.mal_id}`}
@@ -177,9 +209,11 @@ export default function TopRatedPage() {
               </div>
               {/* Fill empty slots if less than 16 items */}
               {filteredAnimes.length < 16 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mt-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mt-8 justify-items-center">
                   {Array.from({ length: 16 - filteredAnimes.length }).map((_, index) => (
-                    <div key={`empty-${index}`} className="h-96 bg-gray-100 rounded-2xl opacity-30"></div>
+                    <div key={`empty-${index}`} className={`h-96 rounded-2xl opacity-30 ${
+                      isDark ? 'bg-gray-800' : 'bg-gray-100'
+                    }`}></div>
                   ))}
                 </div>
               )}
@@ -193,19 +227,23 @@ export default function TopRatedPage() {
           const totalPages = Math.ceil(allAnimes.length / itemsPerPage);
           
           return totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-2 mt-8">
+            <div className="flex flex-wrap justify-center items-center gap-2 mt-8 px-4">
               <button
                 onClick={() => handlePageChange(Math.max(1, page - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 bg-white border border-gray-400 font-bold text-gray-400 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b24dc8] hover:text-white hover:border-none hover:cursor-pointer transition-colors"
+                className={`px-1 md:px-3 py-1 border font-bold rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b24dc8] hover:text-white hover:border-none hover:cursor-pointer transition-colors ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-600 text-gray-400' 
+                    : 'bg-white border-gray-400 text-gray-400'
+                }`}
               >
                 Previous
               </button>
               
               {(() => {
-                const startPage = Math.max(1, page - 2);
-                const endPage = Math.min(totalPages, startPage + 4);
-                const adjustedStartPage = Math.max(1, endPage - 4);
+                const startPage = Math.max(1, page - 1);
+                const endPage = Math.min(totalPages, startPage + 3);
+                const adjustedStartPage = Math.max(1, endPage - 3);
                 
                 return Array.from({ length: endPage - adjustedStartPage + 1 }, (_, index) => {
                   const pageNumber = adjustedStartPage + index;
@@ -213,10 +251,12 @@ export default function TopRatedPage() {
                     <button
                       key={`page-${pageNumber}`}
                       onClick={() => handlePageChange(pageNumber)}
-                      className={`px-3 py-1 border border-gray-400 font-bold text-gray-700 rounded-md transition-colors ${
+                      className={`px-2 md:px-3 py-1 border font-bold rounded-md transition-colors ${
                         page === pageNumber
-                          ? 'bg-[#1a8ea0] text-white'
-                          : 'bg-white text-gray-700 hover:bg-[#b24dc8] hover:text-white hover:cursor-pointer'
+                          ? 'bg-[#1a8ea0] text-white border-[#1a8ea0]'
+                          : isDark 
+                            ? 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-[#b24dc8] hover:text-white hover:cursor-pointer'
+                            : 'bg-white border-gray-400 text-gray-700 hover:bg-[#b24dc8] hover:text-white hover:cursor-pointer'
                       }`}
                     >
                       {pageNumber}
@@ -225,14 +265,20 @@ export default function TopRatedPage() {
                 });
               })()}
               
-              {totalPages > 5 && page < totalPages - 2 && (
-                <span className="px-2 text-gray-500">...</span>
+              {totalPages > 4 && page < totalPages - 1 && (
+                <span className={`px-2 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>...</span>
               )}
               
               <button
                 onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-1 bg-white border border-gray-400 font-bold text-gray-400 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b24dc8] hover:text-white hover:border-none hover:cursor-pointer transition-colors"
+                className={`px-3 py-1 border font-bold rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b24dc8] hover:text-white hover:border-none hover:cursor-pointer transition-colors ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-600 text-gray-400' 
+                    : 'bg-white border-gray-400 text-gray-400'
+                }`}
               >
                 Next
               </button>

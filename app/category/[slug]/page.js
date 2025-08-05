@@ -220,7 +220,7 @@ export default function CategoryPage() {
 
       {loading ? (
         <div className={`flex justify-center items-center h-96 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
-          <Loader text="Loading Category" size="text-2xl" />
+          <Loader text="Loading " size="text-2xl" />
         </div>
       ) : (
         <>

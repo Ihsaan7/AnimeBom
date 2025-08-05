@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import GlitchLoader from '@/components/GlitchLoader';
 import { useParams, useSearchParams } from 'next/navigation';
 import { 
   Heart, 
@@ -289,18 +290,21 @@ export default function CharacterDetails() {
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-colors ${
+      <div className={`min-h-screen -mt-2 flex items-center justify-center transition-colors ${
         isDark ? 'bg-gray-900' : 'bg-gray-50'
       }`}>
-        <Loader text="Loading Character" size="text-2xl" />
+        <Loader text="Loading" size="text-2xl" />
       </div>
+      // <div className="flex justify-center items-center py-12">
+      //       <GlitchLoader />
+      //   </div>
     );
   }
 
   if (!characterData) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-colors ${
-        isDark ? 'bg-gray-900' : 'bg-gray-50'
+      <div className={`min-h-screen  flex items-center justify-center transition-colors ${
+        isDark ? 'bg-gray-900 ' : 'bg-gray-50 '
       }`}>
         <div className="text-center max-w-md mx-auto p-8">
           <div className="text-6xl mb-4">😞</div>
@@ -322,11 +326,11 @@ export default function CharacterDetails() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors ${
+    <div className={`min-h-screen -mt-2  transition-colors ${
       isDark ? 'bg-gray-900' : 'bg-gray-50'
     }`}>
       {/* Hero Section */}
-      <div className="relative h-[40vh] overflow-hidden">
+      <div className="relative h-[40vh]  overflow-hidden">
         <Image
           src={bannerImage || characterData.image.large}
           alt={characterData.name.full}

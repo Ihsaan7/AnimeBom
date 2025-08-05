@@ -172,7 +172,7 @@ export default function TopAnimePage() {
 
       {loading ? (
         <div className="flex justify-center items-center h-96 bg-white">
-          <Loader text={`Loading ${selectedYear} ${selectedSeason.charAt(0).toUpperCase() + selectedSeason.slice(1)} Anime`} size="text-2xl" />
+          <Loader text="Loading" size="text-2xl" />
         </div>
       ) : (
         <>

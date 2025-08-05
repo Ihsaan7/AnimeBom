@@ -303,7 +303,7 @@ const WatchNowContent = () => {
   if (loading) {
     return (
       <div className='min-h-screen flex items-center justify-center'>
-        <Loader text="Loading Anime Details" size="text-2xl" />
+        <Loader text="Loading " size="text-2xl" />
       </div>
     )
   }

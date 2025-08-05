@@ -179,7 +179,7 @@ export default function UpcomingPage() {
 
       {loading ? (
         <div className={`flex justify-center items-center h-96 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
-          <Loader text="Loading Upcoming" size="text-2xl" />
+          <Loader text="Loading" size="text-2xl" />
         </div>
       ) : (
         <>

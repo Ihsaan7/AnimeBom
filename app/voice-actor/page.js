@@ -388,7 +388,7 @@ const VoiceActorContent = () => {
     const adjustedStartPage = Math.max(1, endPage - 4)
 
     return (
-      <div className="flex justify-center items-center gap-2 mt-8">
+      <div className="flex justify-center  items-center gap-2 mt-8">
         <button
           onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
@@ -407,7 +407,7 @@ const VoiceActorContent = () => {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 rounded-lg border transition-colors font-bold ${
+              className={`px-4  py-2 rounded-lg border transition-colors font-bold ${
                 currentPage === page
                   ? 'bg-teal-500 text-white border-teal-500'
                   : isDark
@@ -454,7 +454,7 @@ const VoiceActorContent = () => {
   }
 
   return (
-    <div className={`min-h-screen px-6 mt- transition-colors ${
+    <div className={`min-h-screen px-6  -mt-2  transition-colors ${
       isDark ? 'bg-gray-900' : 'bg-gray-50'
     }`}>
       {/* Header Section */}
@@ -503,7 +503,7 @@ const VoiceActorContent = () => {
                 <h3 className={`font-bold text-xl mb-3 ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}>About</h3>
-                <p className={`leading-relaxed ${
+                <p className={`leading-relaxed break-words overflow-wrap-anywhere ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
                   {actorData?.about || 'No information available.'}

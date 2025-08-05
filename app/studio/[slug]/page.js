@@ -221,7 +221,7 @@ export default function StudioPage() {
   const currentPageAnimes = allAnimes.slice((page - 1) * 25, page * 25);
 
   return (
-    <div className={`min-h-screen px-6 py-8 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
+    <div className={`min-h-screen -mt-2 px-6 py-8 ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
       <div className="container mx-auto">
         {/* Header */}
         <div className="py-6 mb-8">
@@ -232,7 +232,7 @@ export default function StudioPage() {
 
         {/* Loading State */}
         {loading && (
-          <div className={`flex justify-center items-center py-12 ${isDark ? 'bg-black' : 'bg-white'}`}>
+          <div className="flex justify-center items-center py-12">
             <GlitchLoader />
           </div>
         )}
@@ -287,7 +287,7 @@ export default function StudioPage() {
                        <button
                          key={`page-${pageNumber}`}
                          onClick={() => setPage(pageNumber)}
-                         className={`px-3 py-1 border font-bold rounded-md transition-colors ${
+                         className={`px-2 md:px-3 py-1 border font-bold rounded-md transition-colors ${
                            page === pageNumber
                              ? 'bg-[#1a8ea0] text-white border-[#1a8ea0]'
                              : isDark
@@ -302,13 +302,13 @@ export default function StudioPage() {
                  })()} 
                  
                  {totalPages > 5 && page < totalPages - 2 && (
-                   <span className={`px-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>...</span>
+                   <span className={`px-1 md:px-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>...</span>
                  )}
                  
                  <button
                    onClick={() => setPage(Math.min(totalPages, page + 1))}
                    disabled={page === totalPages}
-                   className={`px-3 py-1 border font-bold rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b24dc8] hover:text-white hover:border-none hover:cursor-pointer transition-colors ${
+                   className={`px-1 md:px-3 py-1 border font-bold rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#b24dc8] hover:text-white hover:border-none hover:cursor-pointer transition-colors ${
                      isDark 
                        ? 'bg-gray-800 border-gray-600 text-gray-300' 
                        : 'bg-white border-gray-400 text-gray-400'
