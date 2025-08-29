@@ -12,16 +12,27 @@ export function SupabaseAuthProvider({ children }) {
 
   useEffect(() => {
     // Get initial session
-    const currentSession = supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    const getInitialSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+      } catch (error) {
+        console.error('Error getting session:', error);
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
 
     // Listen for changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false); // Ensure loading is false after auth state changes
     });
 
     return () => {
@@ -38,4 +49,4 @@ export function SupabaseAuthProvider({ children }) {
 
 export function useSupabaseAuth() {
   return useContext(AuthContext);
-} 
+}

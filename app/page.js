@@ -9,8 +9,19 @@ import AnimeCard from "@/components/AnimeCard";
 import Loader from "@/components/Loader";
 import { useTheme } from "@/contexts/ThemeContext";
 import { generateAnimeKey } from "@/lib/keyUtils";
+import dynamic from "next/dynamic";
 
-export default function HomePage() {
+// Prevent server-side rendering to avoid hydration mismatch
+const ClientOnlyHomePage = dynamic(() => Promise.resolve(HomePageContent), {
+  ssr: false,
+  loading: () => (
+    <div className="flex justify-center items-center min-h-screen">
+      <Loader />
+    </div>
+  )
+});
+
+function HomePageContent() {
   const router = useRouter();
   const { isDark } = useTheme();
   const { user, loading: authLoading } = useSupabaseAuth();
@@ -20,14 +31,29 @@ export default function HomePage() {
   const [topRatedAnimes, setTopRatedAnimes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Redirect non-authenticated users to signup page
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (mounted && !authLoading && !user) {
       router.push('/auth');
       return;
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, mounted]);
+
+  // Don't render anything until mounted and authenticated
+  if (!mounted || authLoading || !user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader />
+      </div>
+    );
+  }
 
   // Sequential API fetching to avoid rate limiting
   useEffect(() => {
@@ -319,4 +345,8 @@ export default function HomePage() {
       </div>
     </main>
   );
+}
+
+export default function HomePage() {
+  return <ClientOnlyHomePage />;
 }
