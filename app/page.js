@@ -46,17 +46,12 @@ function HomePageContent() {
     }
   }, [user, authLoading, router, mounted]);
 
-  // Don't render anything until mounted and authenticated
-  if (!mounted || authLoading || !user) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader />
-      </div>
-    );
-  }
-
   // Sequential API fetching to avoid rate limiting
   useEffect(() => {
+    // Only fetch data if user is authenticated and component is mounted
+    if (!mounted || authLoading || !user) {
+      return;
+    }
     const fetchAllAnimeData = async () => {
       setLoading(true);
       
@@ -141,7 +136,7 @@ function HomePageContent() {
     };
     
     fetchAllAnimeData();
-  }, []);  // Remove retryCount dependency to prevent infinite loops
+  }, [mounted, authLoading, user]);  // Include auth dependencies
 
   // Simple retry mechanism if all data fails to load
   useEffect(() => {
@@ -178,18 +173,13 @@ function HomePageContent() {
     setRetryCount(prev => prev + 1);
   };
 
-  // Show loading while checking authentication
-  if (authLoading) {
+  // Don't render anything until mounted and authenticated
+  if (!mounted || authLoading || !user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader />
       </div>
     );
-  }
-
-  // Don't render anything if user is not authenticated
-  if (!user) {
-    return null;
   }
 
   if (loading) {
