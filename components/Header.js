@@ -1,18 +1,43 @@
 // This file is now Header.js (JS, not JSX)
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MdHome, MdCalendarToday, MdInfoOutline, MdMenu, MdClose } from "react-icons/md";
-import { FiBox, FiSearch, FiSun, FiMoon } from "react-icons/fi";
+import { FiBox, FiSearch, FiSun, FiMoon, FiUser, FiLogOut } from "react-icons/fi";
 import { GiBroadsword } from "react-icons/gi";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useSupabaseAuth } from "@/components/SupabaseAuthProvider";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Header() {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const { isDark, toggleTheme } = useTheme();
+  const { user, loading } = useSupabaseAuth();
+  const dropdownRef = useRef(null);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setShowUserDropdown(false);
+    router.push('/auth');
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Function to get a random anime and redirect to its details page
   const handleRandomAnime = async () => {
@@ -178,14 +203,71 @@ export default function Header() {
               <FiMoon size={16} className="lg:w-[18px] lg:h-[18px]" />
             )}
           </button>
-          {/* Get Started Button */}
-          <Link 
-            href="/auth" 
-            className="bg-cyan-700 text-white border-none text-xs lg:text-sm rounded-md px-3 lg:px-5 py-1 font-semibold hover:bg-cyan-800 transition-colors no-underline inline-block"
-          >
-            <span className="hidden lg:inline">Get Started</span>
-            <span className="lg:hidden">Start</span>
-          </Link>
+          {/* Authentication Section */}
+          {loading ? (
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-700 border-t-transparent"></div>
+          ) : user ? (
+            /* User Dropdown */
+             <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+                  isDark ? 'hover:bg-gray-800 text-white' : 'hover:bg-gray-100 text-black'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  isDark ? 'bg-gray-700' : 'bg-cyan-100'
+                }`}>
+                  <FiUser size={16} className={isDark ? 'text-white' : 'text-cyan-700'} />
+                </div>
+                <span className="hidden lg:block text-sm font-medium">
+                  {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
+                </span>
+              </button>
+              
+              {showUserDropdown && (
+                <div className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg z-50 ${
+                  isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                }`}>
+                  <div className="py-1">
+                    <div className={`px-4 py-2 text-sm border-b ${
+                      isDark ? 'text-gray-300 border-gray-700' : 'text-gray-700 border-gray-200'
+                    }`}>
+                      {user.email}
+                    </div>
+                    <Link
+                      href="/dashboard"
+                      className={`flex items-center gap-2 px-4 py-2 text-sm hover:bg-opacity-50 transition-colors no-underline ${
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setShowUserDropdown(false)}
+                    >
+                      <FiUser size={16} />
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className={`flex items-center gap-2 w-full px-4 py-2 text-sm text-left hover:bg-opacity-50 transition-colors ${
+                        isDark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <FiLogOut size={16} />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Get Started Button */
+            <Link 
+              href="/auth" 
+              className="bg-cyan-700 text-white border-none text-xs lg:text-sm rounded-md px-3 lg:px-5 py-1 font-semibold hover:bg-cyan-800 transition-colors no-underline inline-block"
+            >
+              <span className="hidden lg:inline">Get Started</span>
+              <span className="lg:hidden">Start</span>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -255,8 +337,8 @@ export default function Header() {
               className="w-full"
             >
               <div className="relative">
-                <input
-                  type="text"
+                 <input
+                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search anime..."
@@ -364,13 +446,62 @@ export default function Header() {
               </div>
             </button>
             
-            <Link 
-              href="/auth"
-              className="w-full bg-cyan-600 text-white py-3 rounded-lg font-semibold hover:bg-cyan-700 transition-colors no-underline text-center block"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Get Started
-            </Link>
+            {/* Authentication Section - Mobile */}
+            {loading ? (
+              <div className="flex justify-center py-4">
+                <div className="w-8 h-8 animate-spin rounded-full border-2 border-cyan-700 border-t-transparent"></div>
+              </div>
+            ) : user ? (
+              <div className="space-y-2">
+                <div className={`px-4 py-2 rounded-md ${
+                  isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      isDark ? 'bg-gray-700' : 'bg-cyan-100'
+                    }`}>
+                      <FiUser size={16} className={isDark ? 'text-white' : 'text-cyan-700'} />
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">
+                        {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
+                      </div>
+                      <div className="text-xs opacity-75">{user.email}</div>
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  href="/dashboard"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors no-underline ${
+                    isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <FiUser size={16} />
+                  Dashboard
+                </Link>
+                <button
+                   onClick={() => {
+                     handleLogout();
+                     setIsMobileMenuOpen(false);
+                   }}
+                  className={`flex items-center gap-2 w-full px-4 py-2 rounded-md text-left transition-colors ${
+                    isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <FiLogOut size={16} />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link 
+                href="/auth"
+                className="w-full bg-cyan-600 text-white py-3 rounded-lg font-semibold hover:bg-cyan-700 transition-colors no-underline text-center block"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Get Started
+              </Link>
+            )}
           </div>
         </div>
 

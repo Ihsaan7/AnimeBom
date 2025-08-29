@@ -13,12 +13,21 @@ import { generateAnimeKey } from "@/lib/keyUtils";
 export default function HomePage() {
   const router = useRouter();
   const { isDark } = useTheme();
+  const { user, loading: authLoading } = useSupabaseAuth();
   const [favorites, setFavorites] = useState([]);
   const [sliderAnimes, setSliderAnimes] = useState([]);
   const [trendingAnimes, setTrendingAnimes] = useState([]);
   const [topRatedAnimes, setTopRatedAnimes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+
+  // Redirect non-authenticated users to signup page
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth');
+      return;
+    }
+  }, [user, authLoading, router]);
 
   // Sequential API fetching to avoid rate limiting
   useEffect(() => {
@@ -143,8 +152,20 @@ export default function HomePage() {
     setRetryCount(prev => prev + 1);
   };
 
+  // Don't render anything if user is not authenticated
+  if (!authLoading && !user) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader />
+      </div>
+    );
+  }
+
   return (
-    
     <main className={`min-h-screen -mt-2   transition-colors ${
       isDark ? 'bg-gray-900' : 'bg-white'
     }`}>
