@@ -152,8 +152,17 @@ export default function HomePage() {
     setRetryCount(prev => prev + 1);
   };
 
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader />
+      </div>
+    );
+  }
+
   // Don't render anything if user is not authenticated
-  if (!authLoading && !user) {
+  if (!user) {
     return null;
   }
 
