@@ -11,16 +11,30 @@ export function SupabaseAuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Auth initialization taking too long, setting loading to false');
+      setLoading(false);
+    }, 5000); // 5 second timeout
+
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        // Add timeout to the session request
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session request timeout')), 3000)
+        );
+        
+        const { data } = await Promise.race([sessionPromise, timeoutPromise]);
         setSession(data.session);
         setUser(data.session?.user ?? null);
+        clearTimeout(loadingTimeout);
       } catch (error) {
         console.error('Error getting session:', error);
         setSession(null);
         setUser(null);
+        clearTimeout(loadingTimeout);
       } finally {
         setLoading(false);
       }
@@ -33,10 +47,12 @@ export function SupabaseAuthProvider({ children }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false); // Ensure loading is false after auth state changes
+      clearTimeout(loadingTimeout);
     });
 
     return () => {
       listener?.subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
     };
   }, []);
 
