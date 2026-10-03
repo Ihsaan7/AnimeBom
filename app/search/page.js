@@ -252,7 +252,7 @@ function SearchContent() {
             <p className={`mb-4 ${
               isDark ? 'text-gray-300' : 'text-gray-600'
             }`}>
-              Showing results for: <span className="font-semibold">"{query}"</span>
+              Showing results for: <span className="font-semibold">&quot;{query}&quot;</span>
             </p>
           )}
         </div>

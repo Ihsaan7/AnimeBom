@@ -241,7 +241,7 @@ export default function StudioPage() {
         {!loading && currentPageAnimes.length === 0 && (
           <div className="text-center py-12">
             <h3 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>No Anime Found</h3>
-            <p className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>No anime found for studio "{studioName}". Try a different studio or check back later.</p>
+            <p className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>No anime found for studio &quot;{studioName}&quot;. Try a different studio or check back later.</p>
           </div>
         )}
 

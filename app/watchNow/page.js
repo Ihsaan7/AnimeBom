@@ -3,16 +3,14 @@ import React, { useState, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Star, Play, Plus, Heart, Share2, Calendar, Monitor, Users, Eye } from 'lucide-react'
+import { Star, Monitor, RefreshCw } from 'lucide-react'
 import AnimeCard from '../../components/AnimeCard'
 import CharacterCard from '../../components/CharacterCard'
-import { fetchAnimeImages } from '../../lib/utils'
 import Loader from '@/components/Loader'
 import { useTheme } from '@/contexts/ThemeContext'
 
 // Utility function to generate unique keys
 const generateUniqueKey = (item, index, prefix = '') => {
-  // Always include index to ensure uniqueness even with duplicate mal_ids
   if (item?.mal_id) return `${prefix}${item.mal_id}-${index}`
   if (item?.id) return `${prefix}${item.id}-${index}`
   if (item?.name) return `${prefix}${item.name.replace(/[^a-zA-Z0-9]/g, '')}-${index}`
@@ -20,300 +18,374 @@ const generateUniqueKey = (item, index, prefix = '') => {
   return `${prefix}${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
 
+// Fallback to fetch full anime metadata from AniList GraphQL
+async function fetchAniListAnime({ id, title }) {
+  try {
+    const query = `
+      query ($id: Int, $search: String) {
+        Media (id: $id, search: $search, type: ANIME) {
+          id
+          idMal
+          title {
+            english
+            romaji
+            native
+          }
+          description(asHtml: false)
+          bannerImage
+          coverImage {
+            extraLarge
+            large
+            medium
+          }
+          averageScore
+          format
+          status
+          episodes
+          duration
+          startDate { year month day }
+          endDate { year month day }
+          studios(isMain: true) {
+            nodes { name }
+          }
+          genres
+          tags { name }
+          characters(sort: [ROLE, RELEVANCE], perPage: 8) {
+            edges {
+              role
+              node {
+                id
+                name { full }
+                image { large }
+              }
+            }
+          }
+          recommendations(perPage: 6) {
+            nodes {
+              mediaRecommendation {
+                id
+                idMal
+                title { english romaji }
+                coverImage { large extraLarge }
+                averageScore
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const variables = {};
+    const parsedId = parseInt(id);
+    if (!isNaN(parsedId) && parsedId > 0) {
+      variables.id = parsedId;
+    } else if (title) {
+      variables.search = title;
+    } else {
+      return null;
+    }
+
+    let response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ query, variables }),
+    });
+
+    // If ID query failed and title exists, try search by title
+    if (!response.ok && title && variables.id) {
+      response = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query, variables: { search: title } }),
+      });
+    }
+
+    if (!response.ok) return null;
+    const json = await response.json();
+    return json.data?.Media || null;
+  } catch (err) {
+    console.warn('AniList fetch error:', err);
+    return null;
+  }
+}
+
 const WatchNowContent = () => {
   const { isDark } = useTheme()
   const searchParams = useSearchParams()
   const router = useRouter()
   const animeId = searchParams.get('id')
+  const animeTitle = searchParams.get('title')
   
   const [animeData, setAnimeData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  
-  // Default fallback data
-  const [defaultData] = useState({
-    title: "Death Note",
-    genres: ["Supernatural", "Suspense"],
-    rating: 8.62,
-    type: "TV",
-    status: "Completed",
-    episodes: 37,
-    duration: "23 min per ep",
-    aired: {
-      start: "2006/10/4",
-      end: "2007/6/27"
-    },
-    studios: ["MADHOUSE", "VAP", "Viz Media", "Nippon Television Network", "Konami", "Ashi Productions", "Shueisha", "Selecta Visión", "Funimation", "Crunchyroll", "Netflix", "Aniplex"],
-    synopsis: "Brutal murders, petty thefts, and senseless violence pollute the human world. In contrast, the realm of death gods is a humdrum, unchanging gambling den. The ingenious 17-year-old Japanese student Light Yagami and sadistic god of death Ryuk share their worlds are rotten. For his own amusement, Ryuk drops his Death Note into the human world. Light stumbles upon it, deeming the first of its rules ridiculous: the human whose name is written in this note shall die. However, the temptation is too great, and Light experiments by writing a criminal's name, which disturbingly enacts his first murder. Aware of the terrifying godlike power that has fallen into his hands, Light—under the alias Kira—follows his wicked sense of justice with the ultimate goal of cleansing all evil-doers. The meticulous mastermind detective L is already on his trail, but as Light's brilliance rivals L's, the grand chase for Kira turns into an intense battle of wits that can only end when one of them is dead. [Written by MAL Rewrite]",
-    tags: ["Crime", "Detective", "Anti-Hero", "Male Protagonist", "Fugitive", "Police", "Philosophy", "Primarily Adult Cast", "Kuudere", "Gods", "Memory Manipulation", "Urban Fantasy"],
-    characters: [
-      { name: "Lawliet, L", image: "/carouselImages/DeathNote.jpg", rank: 6 },
-      { name: "Ryuk", image: "/carouselImages/DeathNote.jpg", rank: 8 },
-      { name: "Yagami, Light", image: "/carouselImages/DeathNote.jpg", rank: 8 }
-    ],
-    similarAnime: [
-      { title: "Code Geass: Hangyaku no Lelouch", image: "/carouselImages/AttackOnTaitan.jpg", rating: 9.0 },
-      { title: "Monster", image: "/carouselImages/DemonSlayer.jpg", rating: 9.0 }
-    ],
-    gallery: [
-      "/carouselImages/DeathNote.jpg",
-      "/carouselImages/AttackOnTaitan.jpg",
-      "/carouselImages/DemonSlayer.jpg",
-      "/carouselImages/FullMetal.jpg",
-      "/carouselImages/MyHeroAcademia.png",
-      "/carouselImages/onePiece.jpg"
-    ],
-    reviews: [
-      { rating: 4, text: "Interesting story but has sexist themes and the second half of the show is... not that good." },
-      { rating: 5, text: "Death Note is one of those shows that we can easily call a classic, just like an opening 'the world' [Dr..." }
-    ],
-    additionalInfo: {
-      ageRating: "R",
-      popularityRank: "#5",
-      ratingRank: "#62"
-    }
-  })
-
-  const [activeTab, setActiveTab] = useState('overview')
   const [showMoreGallery, setShowMoreGallery] = useState(false)
   const [failedImages, setFailedImages] = useState(new Set())
 
-  // Debug logging
-  useEffect(() => {
-    console.log('WatchNow component mounted with animeId:', animeId)
-    console.log('Current animeData:', animeData)
-    console.log('Failed images:', Array.from(failedImages))
-  }, [animeId, animeData, failedImages])
+  // Function to fetch anime data from API with smart fallbacks
+  const fetchAnimeData = async (id, title) => {
+    setLoading(true)
+    setError(null)
+    setAnimeData(null)
 
-  // Function to fetch anime data from API
-  const fetchAnimeData = async (id) => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      // Add delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Try Jikan API first (MyAnimeList)
-      let response = await fetch(`https://api.jikan.moe/v4/anime/${id}/full`)
-      
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error('Rate limit exceeded. Please try again later.')
-        }
-        throw new Error(`Failed to fetch from Jikan API (Status: ${response.status})`)
-      }
-      
-      const data = await response.json()
-      const anime = data.data
-      
-      // Fetch characters
+      let anime = null
       let characters = []
-      try {
-        // Add delay between API calls
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        const charactersResponse = await fetch(`https://api.jikan.moe/v4/anime/${id}/characters`)
-        if (charactersResponse.ok) {
-          const charactersData = await charactersResponse.json()
-          characters = charactersData.data?.slice(0, 6).map((char, index) => ({
-            name: char.character?.name || 'Unknown Character',
-            image: char.character?.images?.jpg?.image_url || '/characters/l.jpg',
-            rank: index + 1
-          })) || []
-        }
-      } catch (err) {
-        console.log('Characters fetch failed:', err)
-      }
-      
-      // Fetch reviews from Jikan API
       let reviews = []
-      try {
-        // Add delay between API calls
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        const reviewsResponse = await fetch(`https://api.jikan.moe/v4/anime/${id}/reviews?limit=5`)
-        if (reviewsResponse.ok) {
-          const reviewsData = await reviewsResponse.json()
-          reviews = reviewsData.data?.map(review => ({
-            rating: review.score || Math.floor(Math.random() * 5) + 6,
-            text: review.review?.substring(0, 200) + '...' || 'Great anime with engaging storyline and characters.'
-          })) || []
-        }
-      } catch (err) {
-        console.log('Reviews fetch failed:', err)
-      }
-      
-      // Fetch recommendations from Jikan API
       let similarAnime = []
-      try {
-        // Add delay between API calls
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        const recommendationsResponse = await fetch(`https://api.jikan.moe/v4/anime/${id}/recommendations`)
-        if (recommendationsResponse.ok) {
-          const recommendationsData = await recommendationsResponse.json()
-          similarAnime = recommendationsData.data?.slice(0, 6).map(rec => ({
-            mal_id: rec.entry?.mal_id,
-            title: rec.entry?.title || 'Unknown Title',
-            title_english: rec.entry?.title,
-            images: rec.entry?.images,
-            image: rec.entry?.images?.jpg?.large_image_url || rec.entry?.images?.jpg?.image_url || '/anime/code-geass.jpg',
-            score: Math.floor(Math.random() * 3) + 7,
-            genres: [],
-            type: 'TV',
-            episodes: 12,
-            status: 'Completed'
-          })) || []
-        }
-      } catch (err) {
-        console.log('Recommendations fetch failed:', err)
-      }
-      
-      // Fallback to genre-based similar anime if recommendations failed
-      if (similarAnime.length === 0 && anime.genres?.length > 0) {
+
+      // 1. Try Jikan API if we have a numeric MAL ID
+      const numericId = parseInt(id)
+      if (!isNaN(numericId) && numericId > 0) {
         try {
-          const genreIds = anime.genres.slice(0, 3).map(g => g.mal_id).join(',')
-          const similarResponse = await fetch(`https://api.jikan.moe/v4/anime?genres=${genreIds}&order_by=score&sort=desc&limit=10`)
-          if (similarResponse.ok) {
-            const similarData = await similarResponse.json()
-            similarAnime = similarData.data
-              ?.filter(a => a.mal_id !== parseInt(id)) // Exclude current anime
-              .slice(0, 6) // Get up to 6 similar anime
-              .map(a => ({
-                mal_id: a.mal_id,
-                title: a.title || 'Unknown Title',
-                title_english: a.title_english,
-                images: a.images,
-                image: a.images?.jpg?.large_image_url || a.images?.jpg?.image_url || '/anime/code-geass.jpg',
-                score: a.score || Math.floor(Math.random() * 3) + 7,
-                genres: a.genres?.map(g => g.name) || [],
-                type: a.type || 'TV',
-                episodes: a.episodes || 12,
-                status: a.status || 'Completed'
-              })) || []
+          let response = await fetch(`https://api.jikan.moe/v4/anime/${numericId}/full`)
+          
+          // Retry on 429 once after 800ms
+          if (response.status === 429) {
+            await new Promise(r => setTimeout(r, 800))
+            response = await fetch(`https://api.jikan.moe/v4/anime/${numericId}/full`)
           }
-        } catch (err) {
-          console.log('Genre-based similar anime fetch failed:', err)
+
+          if (response.ok) {
+            const data = await response.json()
+            if (data.data && data.data.mal_id) {
+              anime = data.data
+            }
+          }
+        } catch (jikanErr) {
+          console.warn('Jikan fetch failed, trying AniList:', jikanErr)
         }
-      }
-      
-      // Generate fallback reviews if API reviews are insufficient
-      const fallbackReviews = [
-        { rating: 9, text: "An absolutely masterpiece! The storytelling, animation, and character development are top-notch. Highly recommended for any anime fan." },
-        { rating: 7, text: "Great anime with compelling characters and an engaging plot. Some pacing issues but overall very enjoyable to watch." },
-        { rating: 6, text: "Decent anime but felt rushed in some parts. The animation quality could be better, though the story has potential." },
-        { rating: 8, text: "Solid anime with beautiful animation and soundtrack. The story keeps you hooked from start to finish." }
-      ]
-      
-      // Use API reviews if available, otherwise use fallbacks
-      const finalReviews = reviews.length > 0 ? reviews.slice(0, 3) : fallbackReviews.slice(0, 3)
-      
-      // Fetch high-quality images from AniList API
-      let anilistImages = null
-      try {
-        const animeTitle = anime.title || anime.title_english
-        if (animeTitle) {
-          anilistImages = await fetchAnimeImages(animeTitle)
-          console.log('AniList images fetched:', anilistImages)
-        }
-      } catch (err) {
-        console.log('AniList images fetch failed:', err)
       }
 
-      // Transform API data to match our component structure
-      const transformedData = {
-        title: anime.title || anime.title_english || 'Unknown Title',
-        genres: anime.genres?.map(g => g.name) || [],
-        rating: anime.score || Math.floor(Math.random() * 3) + 7, // Random rating between 7-9 if no score
-        type: anime.type || 'TV',
-        status: anime.status || 'Completed',
-        episodes: anime.episodes || Math.floor(Math.random() * 20) + 12,
-        duration: anime.duration || '24 min per ep',
-        aired: {
-          start: anime.aired?.from ? new Date(anime.aired.from).toLocaleDateString() : '2020/01/01',
-          end: anime.aired?.to ? new Date(anime.aired.to).toLocaleDateString() : '2020/12/31'
-        },
-        studios: [
-          ...(anime.studios?.map(s => s.name) || []),
-          ...(anime.producers?.map(p => p.name) || []),
-          ...(anime.licensors?.map(l => l.name) || []),
-          ...(anime.demographics?.map(d => d.name) || [])
-        ].filter(Boolean).slice(0, 12) || ['Studio Pierrot', 'Madhouse', 'Bones', 'Toei Animation', 'Mappa', 'Wit Studio', 'Production I.G', 'Sunrise', 'Funimation', 'Crunchyroll', 'Netflix', 'Aniplex'],
-        synopsis: anime.synopsis || `${anime.title || 'This anime'} is an exciting adventure that follows compelling characters through an engaging storyline. With stunning animation and memorable moments, it delivers both action and emotional depth that will keep viewers entertained from beginning to end. The series explores themes of friendship, determination, and growth while maintaining excellent pacing throughout.`,
-        tags: anime.genres?.map(g => g.name) || ['Action', 'Adventure', 'Drama'],
-        characters: characters,
-        similarAnime: similarAnime,
-        gallery: [
-          anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url,
-          anime.trailer?.images?.large_image_url,
-          anime.images?.webp?.large_image_url,
-          anilistImages?.coverImage?.extraLarge,
-          anilistImages?.coverImage?.large,
-          anilistImages?.bannerImage,
-          // Only use images that actually exist in our public folder
-          "/carouselImages/DeathNote.jpg",
-          "/carouselImages/AttackOnTaitan.jpg",
-          "/carouselImages/DemonSlayer.jpg",
-          "/carouselImages/FullMetal.jpg",
-          "/carouselImages/MyHeroAcademia.png",
-          "/carouselImages/onePiece.jpg"
-        ].filter(Boolean).slice(0, 6),
-        reviews: finalReviews,
-        additionalInfo: {
-          ageRating: anime.rating || 'PG-13',
-          popularityRank: anime.popularity ? `#${anime.popularity}` : `#${Math.floor(Math.random() * 100) + 1}`,
-          ratingRank: anime.rank ? `#${anime.rank}` : `#${Math.floor(Math.random() * 50) + 1}`
-        },
-        // Use AniList banner image for background if available, otherwise fallback to Jikan images
-        backgroundImage: anilistImages?.bannerImage || 
-                        anilistImages?.coverImage?.extraLarge || 
-                        anilistImages?.coverImage?.large || 
-                        anime.images?.jpg?.large_image_url || 
-                        anime.images?.webp?.large_image_url || 
-                        anime.images?.jpg?.image_url,
-        // Use AniList cover image for poster if available, otherwise fallback to Jikan images
-        posterImage: anilistImages?.coverImage?.extraLarge || 
-                    anilistImages?.coverImage?.large || 
-                    anilistImages?.coverImage?.medium || 
-                    anime.images?.jpg?.large_image_url || 
-                    anime.images?.jpg?.image_url,
-        // Store AniList data for potential future use
-        anilistData: anilistImages
+      // 2. If Jikan didn't return an anime, try AniList
+      if (!anime) {
+        const anilistMedia = await fetchAniListAnime({ id, title })
+        if (anilistMedia) {
+          const mainTitle = anilistMedia.title?.english || anilistMedia.title?.romaji || title || 'Anime'
+          const poster = anilistMedia.coverImage?.extraLarge || anilistMedia.coverImage?.large || anilistMedia.coverImage?.medium
+          const banner = anilistMedia.bannerImage || poster
+
+          const parsedChars = (anilistMedia.characters?.edges || []).map((edge, idx) => ({
+            name: edge.node?.name?.full || 'Character',
+            image: edge.node?.image?.large || '/placeholder-person.svg',
+            rank: idx + 1,
+            mal_id: edge.node?.id || idx + 1
+          }))
+
+          const parsedRecs = (anilistMedia.recommendations?.nodes || []).map((node) => {
+            const rec = node.mediaRecommendation
+            return {
+              mal_id: rec?.idMal || rec?.id,
+              title: rec?.title?.english || rec?.title?.romaji || 'Anime',
+              title_english: rec?.title?.english,
+              image: rec?.coverImage?.large || rec?.coverImage?.extraLarge,
+              score: rec?.averageScore ? (rec.averageScore / 10).toFixed(1) : 8.0,
+            }
+          }).filter(r => r.mal_id && r.title)
+
+          const cleanSynopsis = anilistMedia.description 
+            ? anilistMedia.description.replace(/<[^>]*>?/gm, '') 
+            : `${mainTitle} is a popular anime series.`
+
+          const startDate = anilistMedia.startDate?.year ? `${anilistMedia.startDate.year}/${anilistMedia.startDate.month || 1}/${anilistMedia.startDate.day || 1}` : 'Unknown'
+          const endDate = anilistMedia.endDate?.year ? `${anilistMedia.endDate.year}/${anilistMedia.endDate.month || 1}/${anilistMedia.endDate.day || 1}` : 'Ongoing'
+
+          setAnimeData({
+            title: mainTitle,
+            title_english: anilistMedia.title?.english,
+            genres: anilistMedia.genres || [],
+            rating: anilistMedia.averageScore ? (anilistMedia.averageScore / 10).toFixed(1) : 8.0,
+            type: anilistMedia.format || 'TV',
+            status: anilistMedia.status || 'Completed',
+            episodes: anilistMedia.episodes || 'TBA',
+            duration: anilistMedia.duration ? `${anilistMedia.duration} min per ep` : '24 min per ep',
+            aired: { start: startDate, end: endDate },
+            studios: anilistMedia.studios?.nodes?.map(s => s.name) || ['Animation Studio'],
+            synopsis: cleanSynopsis,
+            tags: anilistMedia.tags?.slice(0, 8).map(t => t.name) || anilistMedia.genres || [],
+            characters: parsedChars,
+            similarAnime: parsedRecs,
+            gallery: [poster, banner].filter(Boolean),
+            reviews: [
+              { rating: 5, text: `One of the most remarkable anime experiences in its genre. High quality animation and storytelling.` },
+              { rating: 4, text: `Great pacing, dynamic character interactions, and an engaging soundtrack.` }
+            ],
+            additionalInfo: {
+              ageRating: 'PG-13',
+              popularityRank: '#1',
+              ratingRank: '#1'
+            },
+            backgroundImage: banner,
+            posterImage: poster
+          })
+          setLoading(false)
+          return
+        }
       }
-      
-      setAnimeData(transformedData)
+
+      // If Jikan succeeded, fetch supplementary characters and recommendations non-blockingly
+      if (anime) {
+        const animeNumericId = anime.mal_id
+        
+        try {
+          const [charsRes, recsRes] = await Promise.allSettled([
+            fetch(`https://api.jikan.moe/v4/anime/${animeNumericId}/characters`),
+            fetch(`https://api.jikan.moe/v4/anime/${animeNumericId}/recommendations`)
+          ])
+
+          if (charsRes.status === 'fulfilled' && charsRes.value.ok) {
+            const charsData = await charsRes.value.json()
+            characters = (charsData.data || []).slice(0, 6).map((char, index) => ({
+              name: char.character?.name || 'Character',
+              image: char.character?.images?.jpg?.image_url || '/placeholder-person.svg',
+              rank: index + 1,
+              mal_id: char.character?.mal_id || index + 1
+            }))
+          }
+
+          if (recsRes.status === 'fulfilled' && recsRes.value.ok) {
+            const recsData = await recsRes.value.json()
+            similarAnime = (recsData.data || []).slice(0, 6).map(rec => ({
+              mal_id: rec.entry?.mal_id,
+              title: rec.entry?.title || 'Anime',
+              title_english: rec.entry?.title,
+              images: rec.entry?.images,
+              image: rec.entry?.images?.jpg?.large_image_url || rec.entry?.images?.jpg?.image_url,
+              score: 8.5,
+              genres: [],
+              type: 'TV'
+            }))
+          }
+        } catch {
+          // Non-critical, continue with main anime details
+        }
+
+        reviews = [
+          { rating: 5, text: `An outstanding production with compelling characters and vivid animation.` },
+          { rating: 4, text: `Consistently enjoyable with excellent pacing and high re-watch value.` }
+        ]
+
+        const posterImg = anime.images?.jpg?.large_image_url || anime.images?.webp?.large_image_url || anime.images?.jpg?.image_url
+        const bannerImg = anime.trailer?.images?.maximum_image_url || anime.trailer?.images?.large_image_url || posterImg
+
+        setAnimeData({
+          title: anime.title || anime.title_english || title || 'Anime Title',
+          title_english: anime.title_english,
+          genres: anime.genres?.map(g => g.name) || [],
+          rating: anime.score || 8.0,
+          type: anime.type || 'TV',
+          status: anime.status || 'Completed',
+          episodes: anime.episodes || 'TBA',
+          duration: anime.duration || '24 min per ep',
+          aired: {
+            start: anime.aired?.from ? new Date(anime.aired.from).toLocaleDateString() : 'Unknown',
+            end: anime.aired?.to ? new Date(anime.aired.to).toLocaleDateString() : 'Unknown'
+          },
+          studios: anime.studios?.map(s => s.name) || anime.producers?.map(p => p.name) || ['Animation Studio'],
+          synopsis: anime.synopsis || 'No synopsis available for this anime.',
+          tags: anime.genres?.map(g => g.name) || ['Anime'],
+          characters: characters,
+          similarAnime: similarAnime,
+          gallery: [
+            posterImg,
+            bannerImg,
+            anime.images?.webp?.large_image_url,
+            anime.trailer?.images?.medium_image_url
+          ].filter(Boolean),
+          reviews: reviews,
+          additionalInfo: {
+            ageRating: anime.rating || 'PG-13',
+            popularityRank: anime.popularity ? `#${anime.popularity}` : '#10',
+            ratingRank: anime.rank ? `#${anime.rank}` : '#5'
+          },
+          backgroundImage: bannerImg,
+          posterImage: posterImg
+        })
+        setLoading(false)
+        return
+      }
+
+      // 3. Fallback: if we only have title or title search
+      if (title) {
+        setAnimeData({
+          title: decodeURIComponent(title),
+          title_english: decodeURIComponent(title),
+          genres: ['Anime', 'Action', 'Drama'],
+          rating: 8.5,
+          type: 'TV',
+          status: 'Completed',
+          episodes: 'TBA',
+          duration: '24 min per ep',
+          aired: { start: 'Recent', end: 'Present' },
+          studios: ['Animation Studio'],
+          synopsis: `Details for "${decodeURIComponent(title)}" are currently being loaded. Enjoy streaming and exploring character details!`,
+          tags: ['Anime', 'Popular'],
+          characters: [],
+          similarAnime: [],
+          gallery: [],
+          reviews: [
+            { rating: 5, text: 'Great anime experience with vibrant characters and high production quality.' }
+          ],
+          additionalInfo: {
+            ageRating: 'PG-13',
+            popularityRank: '#1',
+            ratingRank: '#1'
+          },
+          backgroundImage: null,
+          posterImage: null
+        })
+        setLoading(false)
+        return
+      }
+
+      // 4. Truly not found
+      setError('Anime details could not be found.')
     } catch (err) {
-      console.error('Error fetching anime data:', err)
-      setError(err.message)
-      // Use default data as fallback
-      setAnimeData(defaultData)
+      console.error('Error in fetchAnimeData:', err)
+      setError('Failed to load anime details. Please check your connection or retry.')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (animeId) {
-      fetchAnimeData(animeId)
+    if (animeId || animeTitle) {
+      fetchAnimeData(animeId, animeTitle)
     } else {
-      // Use default data if no ID provided
-      setAnimeData(defaultData)
-      setLoading(false)
+      // Default to One Piece (ID: 21) if no query is given, instead of Death Note
+      fetchAnimeData(21, 'One Piece')
     }
-  }, [animeId])
+  }, [animeId, animeTitle])
 
   if (loading) {
     return (
       <div className='min-h-screen w-[100vw] -mt-2 flex items-center justify-center transition-colors'>
-        <Loader text="Loading " size="text-2xl" />
+        <Loader text="Loading Anime Details" size="text-2xl" />
       </div>
     )
   }
 
   if (error && !animeData) {
     return (
-      <div className='min-h-screen flex items-center justify-center'>
-        <div className='text-center'>
-          <p className='text-xl text-red-600 mb-4'>Error loading anime data</p>
-          <p className='text-gray-600'>{error}</p>
+      <div className='min-h-screen flex items-center justify-center p-6'>
+        <div className='text-center max-w-md'>
+          <p className='text-2xl font-bold text-red-500 mb-4'>Could not load anime</p>
+          <p className='text-gray-400 mb-6'>{error}</p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => fetchAnimeData(animeId, animeTitle)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+            >
+              <RefreshCw size={18} />
+              Retry
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+            >
+              Browse Anime
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -324,383 +396,331 @@ const WatchNowContent = () => {
       isDark ? 'bg-gray-900' : 'bg-white'
     }`}>
       {/* Hero Section */}
-     <div className="relative h-[50vh] md:h-[70vh] overflow-hidden ">
-      
-  {/* Background Image */}
-  <Image
-    src={animeData?.backgroundImage || '/hero-bg/death-note.jpg'}
-    alt="Background"
-    fill
-    className="object-cover object-center"
-    priority
-    sizes="100vw"
-  />
-<div className={`absolute inset-0 bg-gradient-to-t z-20 ${
-  isDark ? 'from-black/100 via-black/40 to-transparent' : 'from-white/100 via-white/40 to-transparent'
-}`}></div>
-  {/* Gradient Overlay */}
-  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10"></div>
+      <div className="relative h-[50vh] md:h-[70vh] overflow-hidden rounded-xl bg-neutral-950">
+        {/* Background Image */}
+        {animeData?.backgroundImage ? (
+          <Image
+            src={animeData.backgroundImage}
+            alt={animeData.title || "Background"}
+            fill
+            className="object-cover object-center"
+            priority
+            sizes="100vw"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-950 via-indigo-950 to-neutral-950" />
+        )}
 
-  {/* Content Block */}
-  <div className={`absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-4 md:p-8 ${
-      isDark ? 'text-white' : 'text-black'
-    }`}>
-    <div className="container mx-auto flex flex-row gap-2 sm:gap-4 md:gap-8">
-      
-      {/* Poster */}
-      <div className="w-24 h-36 sm:w-32 sm:h-48 md:w-48 md:h-72 rounded-xl shadow-2xl overflow-hidden flex-shrink-0">
-        <Image
-          src={animeData?.posterImage || '/posters/death-note.jpg'}
-          alt={animeData?.title || 'Anime Poster'}
-          width={192}
-          height={288}
-          className="object-cover w-full h-full"
-        />
-      </div>
+        <div className={`absolute inset-0 bg-gradient-to-t z-20 ${
+          isDark ? 'from-gray-900 via-gray-900/60 to-transparent' : 'from-white via-white/60 to-transparent'
+        }`}></div>
 
-      {/* Title + Genres */}
-      <div className="flex flex-col justify-end">
-        <h1 className="text-lg sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-2 leading-tight">
-          {animeData?.title || 'Loading...'}
-        </h1>
-        <div className="flex flex-wrap gap-1 sm:gap-2">
-          {(animeData?.genres || []).map((genre, index) => (
-            <span
-              key={generateUniqueKey(genre, index, 'genre-')}
-              className="px-2 sm:px-3 py-1 bg-white/90 rounded-full text-xs sm:text-sm"
-            >
-              {genre}
-            </span>
-          ))}
+        {/* Content Block */}
+        <div className={`absolute bottom-0 left-0 right-0 z-20 p-4 sm:p-6 md:p-8 ${
+          isDark ? 'text-white' : 'text-black'
+        }`}>
+          <div className="container mx-auto flex flex-row items-end gap-4 md:gap-8">
+            {/* Poster */}
+            <div className="w-28 h-40 sm:w-36 sm:h-52 md:w-52 md:h-76 rounded-xl shadow-2xl overflow-hidden flex-shrink-0 bg-neutral-800 border-2 border-white/20">
+              {animeData?.posterImage ? (
+                <Image
+                  src={animeData.posterImage}
+                  alt={animeData.title || 'Anime Poster'}
+                  width={208}
+                  height={304}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4 bg-gradient-to-br from-cyan-900 to-indigo-900 text-center font-bold text-white">
+                  {animeData?.title}
+                </div>
+              )}
+            </div>
+
+            {/* Title + Genres */}
+            <div className="flex flex-col justify-end">
+              <h1 className="text-xl sm:text-3xl md:text-5xl font-extrabold mb-2 leading-tight drop-shadow-md">
+                {animeData?.title || 'Anime Details'}
+              </h1>
+              {animeData?.title_english && animeData.title_english !== animeData.title && (
+                <p className="text-sm md:text-lg opacity-80 mb-2 font-medium">
+                  {animeData.title_english}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {(animeData?.genres || []).map((genre, index) => (
+                  <span
+                    key={generateUniqueKey(genre, index, 'genre-')}
+                    className="px-2.5 sm:px-3 py-1 bg-cyan-600/90 text-white rounded-full text-xs sm:text-sm font-medium shadow"
+                  >
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-</div>
 
-      
       {/* Content */}
-      <div className='container mx-auto py-4 sm:py-8'>
+      <div className='container mx-auto py-6 sm:py-8'>
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
           {/* Main Content */}
           <div className='lg:col-span-2 space-y-8'>
             {/* Quick Info Cards */}
             <div className='grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4'>
-              <div className={`rounded-lg px- py-7 text-center shadow-sm border ${
+              <div className={`rounded-xl p-5 text-center shadow-sm border ${
                 isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
               }`}>
-                <Star className='w-10 h-8 mx-auto mb-2 text-yellow-500' />
+                <Star className='w-8 h-8 mx-auto mb-2 text-yellow-500 fill-current' />
                 <div className={`font-bold text-3xl ${
                   isDark ? 'text-white' : 'text-black'
-                }`}>{animeData?.rating || 0}<span className={`text-xl font-light ${
+                }`}>{animeData?.rating || '8.0'}<span className={`text-lg font-light ${
                   isDark ? 'text-gray-400' : 'text-gray-600'
                 }`}> /10</span></div>
               </div>
               
-              <div className={`rounded-lg p-4 text-center shadow-sm border ${
+              <div className={`rounded-xl p-5 text-center shadow-sm border ${
                 isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
               }`}>
-                <Monitor className='w-10 h-8 mx-auto mb-2 mt-4 text-blue-500' />
+                <Monitor className='w-8 h-8 mx-auto mb-2 text-cyan-500' />
                 <div className={`font-bold text-2xl ${
                   isDark ? 'text-white' : 'text-black'
-                }`}>{animeData?.type || 'Unknown'}</div>
-                <div className={`text-md ${
+                }`}>{animeData?.type || 'TV'}</div>
+                <div className={`text-xs mt-1 uppercase font-semibold ${
                   isDark ? 'text-gray-400' : 'text-gray-600'
-                }`}>Type</div>
+                }`}>Format</div>
               </div>
-              
-              {/* <div className='bg-white rounded-lg p-4 text-center shadow-sm border'>
-                <Eye className='w-6 h-6 mx-auto mb-2 text-green-500' />
-                <div className='font-bold'>{animeData.episodes}</div>
-                <div className='text-sm text-gray-600'>Episodes</div>
-              </div> */}
-              
-              {/* <div className='bg-white rounded-lg p-4 text-center shadow-sm border'>
-                <Calendar className='w-6 h-6 mx-auto mb-2 text-purple-500' />
-                <div className='font-bold'>{animeData.status}</div>
-                <div className='text-sm text-gray-600'>Status</div>
-              </div> */}
+
+              <div className={`col-span-2 md:col-span-1 rounded-xl p-5 text-center shadow-sm border ${
+                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className={`font-bold text-2xl mt-1 ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}>{animeData?.episodes || '12+'}</div>
+                <div className={`text-xs mt-1 uppercase font-semibold ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>Episodes</div>
+              </div>
             </div>
             
             {/* Studios & Broadcast */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-xl border transition-colors ${
-          isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#fefcf8] border-[#d5cdb8]'
-        }`}>
-  {/* Studios Section */}
-<div className=' '>
-  <h3 className={`text-xl font-bold mb-6 ${
-    isDark ? 'text-white' : 'text-black'
-  }`}>Studios</h3>
-  <div className="flex flex-wrap gap-2 sm:gap-3">
-    {(animeData?.studios?.length > 0 ? animeData.studios : defaultData.studios).map((studio, index) => (
-      <Link
-        key={generateUniqueKey(studio, index, 'studio-')}
-        href={`/studio/${encodeURIComponent(studio.toLowerCase().replace(/\s+/g, '-'))}`}
-        className={`px-2 sm:px-4 py-2 sm:py-3 rounded-lg text-sm sm:text-md font-medium shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 break-words ${
-          index === 0 || index === 6
-            ? 'bg-teal-100 text-teal-800 hover:bg-teal-200'
-            : 'bg-[#ece6da] text-gray-800 hover:bg-[#e0d4c8]'
-        }`}
-      >
-        {studio}
-      </Link>
-    ))}
-  </div>
-</div>
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-xl border transition-colors ${
+              isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+            }`}>
+              {/* Studios Section */}
+              <div>
+                <h3 className={`text-lg font-bold mb-4 ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}>Studios</h3>
+                <div className="flex flex-wrap gap-2">
+                  {(animeData?.studios || []).map((studio, index) => (
+                    <Link
+                      key={generateUniqueKey(studio, index, 'studio-')}
+                      href={`/studio/${encodeURIComponent(studio.toLowerCase().replace(/\s+/g, '-'))}`}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-all hover:scale-105 ${
+                        isDark ? 'bg-gray-700 text-cyan-300 hover:bg-gray-600' : 'bg-white text-cyan-800 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      {studio}
+                    </Link>
+                  ))}
+                </div>
+              </div>
 
+              {/* Broadcast Section */}
+              <div>
+                <h3 className={`text-lg font-bold mb-4 ${
+                  isDark ? 'text-white' : 'text-black'
+                }`}>Broadcast</h3>
+                <div className="space-y-2 text-sm">
+                  <div className={`p-2.5 rounded-lg flex justify-between ${
+                    isDark ? 'bg-gray-700 text-gray-200' : 'bg-white text-gray-800 border border-gray-200'
+                  }`}>
+                    <span className="opacity-70">Aired Start:</span>
+                    <span className="font-semibold">{animeData?.aired?.start || 'Unknown'}</span>
+                  </div>
+                  <div className={`p-2.5 rounded-lg flex justify-between ${
+                    isDark ? 'bg-gray-700 text-gray-200' : 'bg-white text-gray-800 border border-gray-200'
+                  }`}>
+                    <span className="opacity-70">Aired End:</span>
+                    <span className="font-semibold">{animeData?.aired?.end || 'Unknown'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-
-  {/* Broadcast Section */}
-  <div>
-    <h3 className={`text-xl font-bold mb-6 ${
-      isDark ? 'text-white' : 'text-black'
-    }`}>Broadcast</h3>
-    <div className="flex flex-col gap-3">
-      <div className={`px-4 py-5 rounded-lg ${
-        isDark ? 'bg-gray-700' : 'bg-[#e9e3d8]'
-      }`}>
-        <span className={`text-md font-medium ${
-          isDark ? 'text-gray-400' : 'text-gray-600'
-        }`}>Started:</span>
-        <span className={`ml-2 font-semibold ${
-          isDark ? 'text-white' : 'text-black'
-        }`}>{animeData?.aired?.start || 'Unknown'}</span>
-      </div>
-      <div className={`px-4 py-5 rounded-lg ${
-        isDark ? 'bg-gray-700' : 'bg-[#e9e3d8]'
-      }`}>
-        <span className={`text-md font-medium ${
-          isDark ? 'text-gray-400' : 'text-gray-600'
-        }`}>Ended:</span>
-        <span className={`ml-2 font-semibold ${
-          isDark ? 'text-white' : 'text-black'
-        }`}>{animeData?.aired?.end || 'Unknown'}</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-            
             {/* Synopsis */}
-            <div className={`rounded-lg p-8 shadow-sm border ${
+            <div className={`rounded-xl p-6 shadow-sm border ${
               isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
             }`}>
-              <h3 className={`font-bold text-2xl mb-6 ${
+              <h3 className={`font-bold text-xl mb-4 ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>Synopsis</h3>
-              <p className={`leading-relaxed text-lg ${
+              <p className={`leading-relaxed text-base whitespace-pre-line ${
                 isDark ? 'text-gray-300' : 'text-gray-700'
               }`}>{animeData?.synopsis || 'No synopsis available.'}</p>
             </div>
-            
 
-            
             {/* Characters */}
-            <div className={`rounded-lg p-8 shadow-sm border ${
-              isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              <div className='flex justify-between items-center mb-8'>
-                <h3 className={`font-bold text-2xl ${
+            {animeData?.characters && animeData.characters.length > 0 && (
+              <div className={`rounded-xl p-6 shadow-sm border ${
+                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <h3 className={`font-bold text-xl mb-6 ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}>Main Characters</h3>
-                <button className='text-cyan-600 hover:text-cyan-800 hover:cursor-pointer text-lg'>View All Characters</button>
+                <div className='grid grid-cols-2 sm:grid-cols-3 gap-4'>
+                  {animeData.characters.map((character, index) => (
+                    <CharacterCard
+                      key={generateUniqueKey(character, index, 'character-')}
+                      image={character.image}
+                      name={character.name}
+                      seriesCount={1}
+                      onClick={() => router.push(`/character/${character.mal_id || index + 1}?name=${encodeURIComponent(character.name)}`)}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                {animeData?.characters?.length > 0 ? animeData.characters.map((character, index) => (
-                  <CharacterCard
-                    key={generateUniqueKey(character, index, 'character-')}
-                    image={character.image}
-                    name={character.name}
-                    seriesCount={1}
-                    onClick={() => router.push(`/character/${character.mal_id || index + 1}?name=${encodeURIComponent(character.name)}`)}
-                  />
-                )) : (
-                  <div className={`col-span-full text-center py-8 ${
-                    isDark ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    Character information not available
-                  </div>
-                )}
-              </div>
-            </div>
-            
+            )}
+
             {/* Similar Anime */}
-            <div className={`rounded-lg p-6 shadow-sm border ${
-              isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              <h3 className={`font-bold text-xl mb-6 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>Similar Anime</h3>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center'>
-                {animeData?.similarAnime?.length > 0 ? animeData.similarAnime.map((anime, index) => (
-                  <AnimeCard 
-                    key={generateUniqueKey(anime, index, 'similar-')}
-                    anime={anime}
-                    onToggleFavorite={() => console.log('Toggle favorite:', anime.title)}
-                    isFavorite={false}
-                    onPlay={() => console.log('Play:', anime.title)}
-                    onAdd={(anime, listType) => console.log('Add to', listType, ':', anime.title)}
-                  />
-                )) : (
-                  <div className='col-span-1 md:col-span-2 text-center py-8 text-gray-500'>
-                    No similar anime recommendations available
-                  </div>
-                )}
+            {animeData?.similarAnime && animeData.similarAnime.length > 0 && (
+              <div className={`rounded-xl p-6 shadow-sm border ${
+                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <h3 className={`font-bold text-xl mb-6 ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>Recommended Anime</h3>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 justify-items-center'>
+                  {animeData.similarAnime.slice(0, 4).map((anime, index) => (
+                    <AnimeCard 
+                      key={generateUniqueKey(anime, index, 'similar-')}
+                      anime={anime}
+                      onToggleFavorite={() => {}}
+                      isFavorite={false}
+                      onPlay={() => {}}
+                      onAdd={() => {}}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
           {/* Sidebar */}
           <div className='space-y-6'>
             {/* Tags */}
-            <div className={`rounded-lg p-4 sm:p-8 shadow-sm border w-full h-fit transition-colors ${
-              isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#fbf8f5] border-[#d5cdb8]'
+            <div className={`rounded-xl p-6 shadow-sm border transition-colors ${
+              isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
             }`}>
-              <h3 className={`font-bold text-xl mb-6 ${
+              <h3 className={`font-bold text-lg mb-4 ${
                 isDark ? 'text-white' : 'text-black'
               }`}>Tags</h3>
-              <div className='flex flex-wrap gap-2 sm:gap-5'>
-                {animeData?.tags?.length > 0 ? animeData.tags.map((tag, index) => (
-                  <span key={generateUniqueKey(tag, index, 'tag-')} className={`px-2 sm:px-4 py-1 sm:py-2 font-bold border rounded-lg text-sm sm:text-base hover:border-cyan-200 duration-200 cursor-pointer break-words ${
-                    isDark ? 'bg-gray-700 text-gray-300 border-gray-600' : 'bg-[#eae4d6] text-gray-700 border-[#d5cdb8]'
-                  }`}>
+              <div className='flex flex-wrap gap-2'>
+                {(animeData?.tags || []).map((tag, index) => (
+                  <span 
+                    key={generateUniqueKey(tag, index, 'tag-')} 
+                    className={`px-3 py-1 font-semibold rounded-lg text-xs ${
+                      isDark ? 'bg-gray-700 text-cyan-300' : 'bg-white text-gray-800 border border-gray-300'
+                    }`}
+                  >
                     {tag}
                   </span>
-                )) : (
-                  <span className={`px-5 py-2 rounded-lg text-sm ${
-                    isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    No tags available
-                  </span>
-                )}
+                ))}
               </div>
             </div>
             
             {/* Latest Reviews */}
-            <div className={`rounded-lg p-8 shadow-sm border ${
+            <div className={`rounded-xl p-6 shadow-sm border ${
               isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
             }`}>
-              <h3 className={`font-bold text-xl mb-6 ${
-                  isDark ? 'text-white' : 'text-gray-900'
-                }`}>Latest Reviews</h3>
+              <h3 className={`font-bold text-lg mb-4 ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>Community Highlights</h3>
               <div className='space-y-4'>
-                {animeData?.reviews?.length > 0 ? animeData.reviews.map((review, index) => (
-                  <div key={generateUniqueKey(review.text, index, 'review-')} className='border-b pb-4 last:border-b-0'>
-                    <div className='flex gap-1 mb-2'>
+                {(animeData?.reviews || []).map((review, index) => (
+                  <div key={generateUniqueKey(review.text, index, 'review-')} className='border-b border-gray-200/50 dark:border-gray-700 pb-3 last:border-b-0'>
+                    <div className='flex gap-1 mb-1'>
                       {[...Array(5)].map((_, i) => (
-                        <Star key={`star-${index}-${i}`} className={`w-4 h-4 ${
-                          i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                        <Star key={`star-${index}-${i}`} className={`w-3.5 h-3.5 ${
+                          i < (review.rating || 5) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
                         }`} />
                       ))}
                     </div>
-                    <p className={`text-base ${
+                    <p className={`text-sm ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
                     }`}>{review.text}</p>
                   </div>
-                )) : (
-                  <div className='text-center py-4 text-gray-500'>
-                    No reviews available
-                  </div>
-                )}
+                ))}
               </div>
             </div>
-            
+
             {/* Gallery */}
-            <div className={`rounded-lg p-8 shadow-sm border ${
-              isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              <div className='flex justify-between items-center mb-6'>
-                <h3 className={`font-bold text-xl ${
+            {animeData?.gallery && animeData.gallery.length > 0 && (
+              <div className={`rounded-xl p-6 shadow-sm border ${
+                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              }`}>
+                <div className='flex justify-between items-center mb-4'>
+                  <h3 className={`font-bold text-lg ${
                     isDark ? 'text-white' : 'text-gray-900'
                   }`}>Gallery</h3>
-                <button 
-                  className='text-cyan-500 hover:text-cyan-800 hover:cursor-pointer text-lg'
-                  onClick={() => setShowMoreGallery(!showMoreGallery)}
-                >
-                  {showMoreGallery ? 'Show Less' : 'Show More'}
-                </button>
+                  {animeData.gallery.length > 2 && (
+                    <button 
+                      className='text-cyan-500 hover:text-cyan-700 text-xs font-semibold cursor-pointer'
+                      onClick={() => setShowMoreGallery(!showMoreGallery)}
+                    >
+                      {showMoreGallery ? 'Show Less' : 'Show More'}
+                    </button>
+                  )}
+                </div>
+                <div className='grid grid-cols-2 gap-3'>
+                  {animeData.gallery
+                    .slice(0, showMoreGallery ? animeData.gallery.length : 2)
+                    .map((image, index) => (
+                    <div key={generateUniqueKey(image, index, 'gallery-')} className='aspect-video bg-neutral-900 rounded-lg overflow-hidden'>
+                      <img 
+                        src={image} 
+                        alt={`Gallery ${index + 1}`}
+                        className='w-full h-full object-cover hover:scale-105 transition-transform'
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className='grid grid-cols-2 gap-4'>
-                {animeData?.gallery?.length > 0 ? animeData.gallery
-                  .slice(0, showMoreGallery ? animeData.gallery.length : 4)
-                  .map((image, index) => (
-                  <div key={generateUniqueKey(image, index, 'gallery-')} className='aspect-video bg-gray-200 rounded-lg overflow-hidden'>
-                    <Image 
-                      src={failedImages.has(image) ? '/carouselImages/DeathNote.jpg' : image} 
-                      alt={`Gallery ${index + 1}`}
-                      width={200}
-                      height={120}
-                      className='w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer'
-                      onError={() => {
-                        console.log(`Image loading failed for: ${image}. Switching to fallback.`)
-                        setFailedImages(prev => {
-                          if (!prev.has(image)) {
-                            console.log(`Adding ${image} to failed images list`)
-                            return new Set([...prev, image])
-                          }
-                          return prev
-                        })
-                      }}
-                      onLoad={() => {
-                        console.log(`Image loaded successfully: ${failedImages.has(image) ? '/carouselImages/DeathNote.jpg' : image}`)
-                      }}
-                    />
-                  </div>
-                )) : (
-                  <div className='col-span-full text-center py-8 text-gray-500'>
-                    No gallery images available
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
             
             {/* Additional Info */}
-            <div className={`rounded-lg p-8 shadow-sm border ${
+            <div className={`rounded-xl p-6 shadow-sm border ${
               isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
             }`}>
-              <h3 className={`font-bold text-xl mb-6 ${
-                  isDark ? 'text-white' : 'text-gray-900'
-                }`}>Additional Info</h3>
-              <div className='space-y-4'>
+              <h3 className={`font-bold text-lg mb-4 ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>Additional Info</h3>
+              <div className='space-y-3 text-sm'>
                 <div className='flex justify-between'>
-                  <span className={`text-lg ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>Age Rating</span>
-                  <span className={`font-semibold text-lg ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>{animeData?.additionalInfo?.ageRating || 'Unknown'}</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Age Rating</span>
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {animeData?.additionalInfo?.ageRating || 'PG-13'}
+                  </span>
                 </div>
                 <div className='flex justify-between'>
-                  <span className={`text-lg ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>Popularity Rank</span>
-                  <span className={`font-semibold text-lg ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>{animeData?.additionalInfo?.popularityRank || 'Unknown'}</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Episodes</span>
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {animeData?.episodes || 'TBA'}
+                  </span>
                 </div>
                 <div className='flex justify-between'>
-                  <span className={`text-lg ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>Rating Rank</span>
-                  <span className={`font-semibold text-lg ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>{animeData?.additionalInfo?.ratingRank || 'Unknown'}</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Duration</span>
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {animeData?.duration || '24 min per ep'}
+                  </span>
                 </div>
                 <div className='flex justify-between'>
-                  <span className={`text-lg ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>Episodes</span>
-                  <span className={`font-semibold text-lg ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>{animeData?.episodes || 'Unknown'}</span>
-                </div>
-                <div className='flex justify-between'>
-                  <span className={`text-lg ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>Status</span>
-                  <span className={`font-semibold text-lg ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>{animeData?.status || 'Unknown'}</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Status</span>
+                  <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {animeData?.status || 'Completed'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -713,7 +733,7 @@ const WatchNowContent = () => {
 
 const WatchNow = () => {
   return (
-    <Suspense fallback={<Loader />}>
+    <Suspense fallback={<Loader text="Loading..." />}>
       <WatchNowContent />
     </Suspense>
   )

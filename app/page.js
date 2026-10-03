@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSupabaseAuth } from "@/components/SupabaseAuthProvider";
+import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import AnimeCarousel from "@/components/AnimeCarousel";
 import AnimeSlider from "@/components/AnimeSlider";
@@ -24,7 +24,7 @@ const ClientOnlyHomePage = dynamic(() => Promise.resolve(HomePageContent), {
 function HomePageContent() {
   const router = useRouter();
   const { isDark } = useTheme();
-  const { user, loading: authLoading } = useSupabaseAuth();
+  const { user, loading: authLoading } = useAuth();
   const [favorites, setFavorites] = useState([]);
   const [sliderAnimes, setSliderAnimes] = useState([]);
   const [trendingAnimes, setTrendingAnimes] = useState([]);
@@ -38,23 +38,9 @@ function HomePageContent() {
     setMounted(true);
   }, []);
 
-  // Check if we're in development mode (when Supabase is not properly configured)
-  const isDevelopmentMode = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project-id') || 
-                           !process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  // Redirect non-authenticated users to signup page (unless in development mode)
-  useEffect(() => {
-    if (mounted && !authLoading && !user && !isDevelopmentMode) {
-      console.log('Redirecting to auth - user not authenticated');
-      router.push('/auth');
-      return;
-    }
-  }, [user, authLoading, router, mounted, isDevelopmentMode]);
-
   // Sequential API fetching to avoid rate limiting
   useEffect(() => {
-    // Only fetch data if user is authenticated and component is mounted (or in development mode)
-    if (!mounted || authLoading || (!user && !isDevelopmentMode)) {
+    if (!mounted) {
       return;
     }
     const fetchAllAnimeData = async () => {
@@ -178,16 +164,10 @@ function HomePageContent() {
     setRetryCount(prev => prev + 1);
   };
 
-  // Don't render anything until mounted and authenticated (unless in development mode)
-  if (!mounted || authLoading || (!user && !isDevelopmentMode)) {
+  if (!mounted || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader />
-        {isDevelopmentMode && (
-          <div className="absolute bottom-4 left-4 bg-yellow-500 text-black p-2 rounded text-sm">
-            Development Mode: Configure Supabase to enable authentication
-          </div>
-        )}
       </div>
     );
   }

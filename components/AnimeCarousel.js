@@ -311,8 +311,10 @@ const AnimeCarousel = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             onClick={() => {
-              if (currentAnime?.mal_id) {
-                router.push(`/watchNow?id=${currentAnime.mal_id}`);
+              if (currentAnime) {
+                const id = currentAnime.mal_id || currentAnime.id || '';
+                const title = currentAnime.title_english || currentAnime.title || '';
+                router.push(`/watchNow?id=${id}&title=${encodeURIComponent(title)}`);
               }
             }}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold text-sm flex items-center transition-colors duration-200 cursor-pointer"

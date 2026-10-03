@@ -660,7 +660,7 @@ export default function CharacterDetails() {
                             Despite his carefree nature, Luffy is a capable leader who inspires loyalty in his crew through his actions and unwavering determination. His dream of becoming the Pirate King drives him forward, and he never backs down from a challenge when his friends or ideals are threatened.
                           </p>
                           <p>
-                            Luffy's rubber powers, granted by the Gomu Gomu no Mi (later revealed to be the Hito Hito no Mi, Model: Nika), allow him to stretch his body like rubber and have made him immune to most blunt attacks. His fighting style is unique and unpredictable, often catching opponents off guard.
+                            Luffy&apos;s rubber powers, granted by the Gomu Gomu no Mi (later revealed to be the Hito Hito no Mi, Model: Nika), allow him to stretch his body like rubber and have made him immune to most blunt attacks. His fighting style is unique and unpredictable, often catching opponents off guard.
                           </p>
                         </div>
                       )}

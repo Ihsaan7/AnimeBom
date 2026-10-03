@@ -3,7 +3,7 @@ import "./globals.css";
 import ClientHeaderWrapper from "../components/ClientHeaderWrapper";
 import ClientFooterWrapper from "../components/ClientFooterWrapper";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { SupabaseAuthProvider } from "@/components/SupabaseAuthProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 import ConditionalPadding from "../components/ConditionalPadding";
 
 export const metadata = {
@@ -24,13 +24,13 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased" style={{ fontFamily: 'Poppins, sans-serif' }}>
-        <SupabaseAuthProvider>
+        <AuthProvider>
           <ThemeProvider>
             <ClientHeaderWrapper />
             <ConditionalPadding>{children}</ConditionalPadding>
             <ClientFooterWrapper />
           </ThemeProvider>
-        </SupabaseAuthProvider>
+        </AuthProvider>
       </body>
     </html>
   );

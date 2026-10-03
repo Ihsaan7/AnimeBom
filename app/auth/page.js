@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/components/AuthProvider";
 
 function AuthForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { signIn, signUp } = useAuth();
   const [isSignIn, setIsSignIn] = useState(true);
 
   // Shared form state
@@ -21,11 +22,6 @@ function AuthForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  
-  // OTP verification state
-  const [showOtpVerification, setShowOtpVerification] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [pendingEmail, setPendingEmail] = useState("");
 
   useEffect(() => {
     const mode = searchParams.get('mode');
@@ -52,17 +48,15 @@ function AuthForm() {
     setEmail("");
     setPassword("");
     setConfirm("");
-    setShowOtpVerification(false);
-    setOtpCode("");
-    setPendingEmail("");
   };
 
-  // Handle sign up with OTP
+  // Handle sign up with MongoDB backend
   const handleSignUp = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    if (!name || !email || !password || !confirm) {
+
+    if (!name.trim() || !email.trim() || !password) {
       setError("All fields are required.");
       return;
     }
@@ -70,116 +64,69 @@ function AuthForm() {
       setError("Passwords do not match.");
       return;
     }
-    setLoading(true);
-    
-    // Sign up with email OTP instead of email confirmation
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { 
-        data: { name },
-        emailRedirectTo: undefined // Disable email confirmation link
-      }
-    });
-    
-    if (error) {
-      setLoading(false);
-      setError(error.message);
-    } else {
-      // Send OTP to email
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false // User already created above
-        }
-      });
-      
-      setLoading(false);
-      // In handleSignUp function, around line 85-90
-      if (otpError) {
-      // Check if it's a rate limiting error
-      if (otpError.message.includes('security purposes') || otpError.message.includes('rate limit')) {
-      // Still show OTP form but with rate limit message
-      setPendingEmail(email);
-      setShowOtpVerification(true);
-      setError('Rate limited. Please wait before requesting a new code.');
-      setName("");
-      setPassword("");
-      setConfirm("");
-      } else {
-      setError(otpError.message);
-      }
-      }
-    }
-  };
-  
-  // Handle OTP verification
-  const handleOtpVerification = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    
-    if (!otpCode) {
-      setError("Please enter the verification code.");
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
-    
+
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email: pendingEmail,
-      token: otpCode,
-      type: 'email'
-    });
-    
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess("Account verified successfully!");
+    try {
+      await signUp({ name: name.trim(), email: email.trim(), password });
+      setSuccess("Account created successfully! Redirecting...");
       setTimeout(() => {
         router.push("/");
-      }, 1500);
-    }
-  };
-  
-  // Resend OTP code
-  const handleResendOtp = async () => {
-    setError("");
-    setLoading(true);
-    
-    const { error } = await supabase.auth.signInWithOtp({
-      email: pendingEmail
-    });
-    
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess("New verification code sent!");
+      }, 1000);
+    } catch (err) {
+      setError(err.message || "Failed to create account.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle sign in
+  // Handle sign in with MongoDB backend
   const handleSignIn = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    if (!email || !password) {
+
+    if (!email.trim() || !password) {
       setError("Email and password are required.");
       return;
     }
+
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    setLoading(false);
-    if (error) {
-      setError(error.message);
-    } else {
-      setSuccess("Signed in successfully!");
-      // Redirect to home/dashboard after sign in
-      router.push("/");
+    try {
+      await signIn({ email: email.trim(), password });
+      setSuccess("Signed in successfully! Redirecting...");
+      setTimeout(() => {
+        router.push("/");
+      }, 1000);
+    } catch (err) {
+      setError(err.message || "Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Demo / Guest login
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      // Use demo credentials or quick guest signup
+      try {
+        await signIn({ email: "guest@animebom.com", password: "guestpassword123" });
+      } catch {
+        await signUp({ name: "Guest User", email: "guest@animebom.com", password: "guestpassword123" });
+      }
+      setSuccess("Logged in as Guest! Redirecting...");
+      setTimeout(() => {
+        router.push("/");
+      }, 800);
+    } catch (err) {
+      setError("Could not login as guest: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -193,7 +140,7 @@ function AuthForm() {
           }`}
         >
           <img
-            src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80"
+            src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80"
             alt="Community"
             className="absolute inset-0 w-full h-full object-cover object-center z-0"
             style={{ filter: 'blur(2px)' }}
@@ -219,69 +166,27 @@ function AuthForm() {
         >
           <div className="flex-1 flex flex-col justify-center px-8 md:px-10 py-8 md:py-5">
             <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-2 transition-all duration-500">
-              {showOtpVerification ? "Verify Your Email" : (isSignIn ? "Sign In" : "Create Account")}
+              {isSignIn ? "Sign In" : "Create Account"}
             </h2>
             <p className="text-zinc-300 mb-6 md:mb-8 text-sm md:text-base transition-all duration-500">
-              {showOtpVerification 
-                ? `Enter the verification code sent to ${pendingEmail}`
-                : (isSignIn 
-                  ? "Enter your credentials to access your account"
-                  : "Sign up to get started with your new account"
-                )
+              {isSignIn 
+                ? "Enter your credentials to access your account"
+                : "Sign up to get started with your new account"
               }
             </p>
             {/* Show error or success */}
-            {error && <div className="mb-4 text-red-500 text-sm">{error}</div>}
-            {success && <div className="mb-4 text-green-500 text-sm">{success}</div>}
-            
-            {showOtpVerification ? (
-              /* OTP Verification Form */
-              <form className="space-y-4" onSubmit={handleOtpVerification}>
-                <div>
-                  <Label htmlFor="otpCode" className="text-zinc-200 text-sm">Verification Code</Label>
-                  <Input 
-                    id="otpCode" 
-                    type="text" 
-                    placeholder="Enter 6-digit code" 
-                    className="mt-1 h-11 md:h-12 text-sm md:text-base bg-neutral-800 border border-neutral-700 placeholder-zinc-400 text-white text-center text-lg tracking-widest" 
-                    value={otpCode}
-                    onChange={e => setOtpCode(e.target.value)}
-                    disabled={loading}
-                    maxLength={6}
-                  />
-                </div>
-                <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold mt-2 h-11 md:h-12 text-sm md:text-base" disabled={loading}>
-                  {loading ? "Verifying..." : "Verify Code"}
-                </Button>
-                <div className="text-center">
-                  <button 
-                    type="button"
-                    onClick={handleResendOtp}
-                    className="text-violet-400 text-sm hover:underline"
-                    disabled={loading}
-                  >
-                    Didn't receive the code? Resend
-                  </button>
-                </div>
-                <div className="text-center">
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setShowOtpVerification(false);
-                      setOtpCode("");
-                      setPendingEmail("");
-                      setError("");
-                      setSuccess("");
-                    }}
-                    className="text-zinc-400 text-sm hover:underline"
-                  >
-                    Back to signup
-                  </button>
-                </div>
-              </form>
-            ) : (
-              /* Regular Auth Form */
-              <form className="space-y-4" onSubmit={isSignIn ? handleSignIn : handleSignUp}>
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-red-900/50 border border-red-500 text-red-200 text-sm">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-3 rounded-lg bg-green-900/50 border border-green-500 text-green-200 text-sm">
+                {success}
+              </div>
+            )}
+
+            <form className="space-y-4" onSubmit={isSignIn ? handleSignIn : handleSignUp}>
               {!isSignIn && (
                 <div className="animate-in slide-in-from-top-2 duration-300">
                   <Label htmlFor="name" className="text-zinc-200 text-sm">Full Name</Label>
@@ -292,6 +197,7 @@ function AuthForm() {
                     value={name}
                     onChange={e => setName(e.target.value)}
                     disabled={loading}
+                    required
                   />
                 </div>
               )}
@@ -305,25 +211,22 @@ function AuthForm() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   disabled={loading}
+                  required
                 />
               </div>
               <div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-zinc-200 text-sm">Password</Label>
-                  {isSignIn && (
-                    <a href="#" className="text-violet-400 text-xs md:text-sm font-medium hover:underline">
-                      Forgot password?
-                    </a>
-                  )}
                 </div>
                 <Input 
                   id="password" 
                   type="password" 
-                  placeholder="********" 
+                  placeholder="At least 6 characters" 
                   className="mt-1 h-11 md:h-12 text-sm md:text-base bg-neutral-800 border border-neutral-700 placeholder-zinc-400 text-white" 
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   disabled={loading}
+                  required
                 />
               </div>
               {!isSignIn && (
@@ -332,11 +235,12 @@ function AuthForm() {
                   <Input 
                     id="confirm" 
                     type="password" 
-                    placeholder="********" 
+                    placeholder="Confirm your password" 
                     className="mt-1 h-11 md:h-12 text-sm md:text-base bg-neutral-800 border border-neutral-700 placeholder-zinc-400 text-white" 
                     value={confirm}
                     onChange={e => setConfirm(e.target.value)}
                     disabled={loading}
+                    required
                   />
                 </div>
               )}
@@ -349,59 +253,57 @@ function AuthForm() {
                 <label htmlFor={isSignIn ? "remember" : "terms"} className="text-zinc-300 text-xs md:text-sm leading-relaxed">
                   {isSignIn ? "Remember me" : (
                     <>
-                      I agree to the <a href="#" className="text-violet-400 underline">Terms of Service</a> and <a href="#" className="text-violet-400 underline">Privacy Policy</a>
+                      I agree to the <span className="text-violet-400 underline">Terms of Service</span> and <span className="text-violet-400 underline">Privacy Policy</span>
                     </>
                   )}
                 </label>
               </div>
-              <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold mt-2 h-11 md:h-12 text-sm md:text-base" disabled={loading}>
+              <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold mt-2 h-11 md:h-12 text-sm md:text-base transition-colors" disabled={loading}>
                 {loading ? (isSignIn ? "Signing In..." : "Creating Account...") : (isSignIn ? "Sign In" : "Create Account")}
               </Button>
             </form>
-            )}
             
-            {!showOtpVerification && (
-              <>
-                <div className="flex items-center my-6">
-                  <div className="flex-grow h-px bg-neutral-700" />
-                  <span className="mx-2 text-zinc-400 text-xs md:text-sm">
-                    Or continue with
-                  </span>
-                  <div className="flex-grow h-px bg-neutral-700" />
-                </div>
-                <div className="flex gap-3 md:gap-4">
-                  <Button variant="outline" className="flex-1 border border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700 text-xs md:text-sm h-10 md:h-11">
-                    Google
-                  </Button>
-                  <Button variant="outline" className="flex-1 border border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700 text-xs md:text-sm h-10 md:h-11">
-                    Facebook
-                  </Button>
-                </div>
-                <p className="mt-6 text-zinc-400 text-center text-xs md:text-sm">
-                  {isSignIn ? (
-                    <>
-                      Don't have an account?{" "}
-                      <button 
-                        onClick={toggleMode}
-                        className="text-violet-400 underline font-medium hover:text-violet-300 transition-colors"
-                      >
-                        Sign Up
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?{" "}
-                      <button 
-                        onClick={toggleMode}
-                        className="text-violet-400 underline font-medium hover:text-violet-300 transition-colors"
-                      >
-                        Sign In
-                      </button>
-                    </>
-                  )}
-                </p>
-              </>
-            )}
+            <div className="flex items-center my-4">
+              <div className="flex-grow h-px bg-neutral-700" />
+              <span className="mx-2 text-zinc-400 text-xs md:text-sm">
+                Or
+              </span>
+              <div className="flex-grow h-px bg-neutral-700" />
+            </div>
+
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleGuestLogin}
+              disabled={loading}
+              className="w-full border border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700 text-xs md:text-sm h-10 md:h-11"
+            >
+              Continue as Guest
+            </Button>
+
+            <p className="mt-6 text-zinc-400 text-center text-xs md:text-sm">
+              {isSignIn ? (
+                <>
+                  Don&apos;t have an account?{" "}
+                  <button 
+                    onClick={toggleMode}
+                    className="text-violet-400 underline font-medium hover:text-violet-300 transition-colors cursor-pointer"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{" "}
+                  <button 
+                    onClick={toggleMode}
+                    className="text-violet-400 underline font-medium hover:text-violet-300 transition-colors cursor-pointer"
+                  >
+                    Sign In
+                  </button>
+                </>
+              )}
+            </p>
           </div>
         </div>
       </div>

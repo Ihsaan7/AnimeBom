@@ -6,8 +6,7 @@ import { MdHome, MdCalendarToday, MdInfoOutline, MdMenu, MdClose } from "react-i
 import { FiBox, FiSearch, FiSun, FiMoon, FiUser, FiLogOut } from "react-icons/fi";
 import { GiBroadsword } from "react-icons/gi";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useSupabaseAuth } from "@/components/SupabaseAuthProvider";
-import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Header() {
   const router = useRouter();
@@ -16,11 +15,13 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const { isDark, toggleTheme } = useTheme();
-  const { user, loading } = useSupabaseAuth();
+  const { user, loading, signOut } = useAuth();
   const dropdownRef = useRef(null);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if (signOut) {
+      await signOut();
+    }
     setShowUserDropdown(false);
     router.push('/auth');
   };
@@ -73,17 +74,18 @@ export default function Header() {
       const data = await response.json();
       
       if (data.data?.Media) {
-         // If anime exists, redirect to its details page
-         router.push(`/watchNow?id=${randomId}`);
-       } else {
-         // If anime doesn't exist, try again with a different ID
-         handleRandomAnime();
-       }
-     } catch (error) {
-       console.error('Error fetching random anime:', error);
-       // Fallback to a known anime ID
-       router.push('/watchNow?id=21');
-     }
+        const media = data.data.Media;
+        const title = media.title?.english || media.title?.romaji || '';
+        router.push(`/watchNow?id=${randomId}&title=${encodeURIComponent(title)}`);
+      } else {
+        // If anime doesn't exist, try again with a different ID
+        handleRandomAnime();
+      }
+    } catch (error) {
+      console.error('Error fetching random anime:', error);
+      // Fallback to a known anime ID
+      router.push('/watchNow?id=21&title=One%20Piece');
+    }
   };
 
   return (
