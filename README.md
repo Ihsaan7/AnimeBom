@@ -26,7 +26,7 @@
 - 📱 **Responsive Design** - Perfect experience on all devices
 - ⚡ **Fast Performance** - Powered by Next.js 15 and TurboPack
 - 🎨 **Beautiful UI** - Styled with TailwindCSS and Framer Motion animations
-- 🔐 **User Authentication** - Secure login with Supabase
+- 🔐 **User Authentication** - Secure login
 - 🌙 **Smooth Animations** - Enhanced UX with Framer Motion
 - 📊 **Real-time Updates** - Dynamic content loading
 
@@ -37,7 +37,7 @@
 | ⚛️ **Next.js 15.4.4** | React Framework with TurboPack |
 | ⚛️ **React 19.1.0** | UI Library |
 | 🎨 **TailwindCSS** | Styling |
-| 🗄️ **Supabase** | Backend & Database |
+
 | 🎭 **Framer Motion** | Animations |
 | 🎯 **Radix UI** | Accessible Components |
 | 🎨 **Lucide React** | Beautiful Icons |
@@ -49,7 +49,7 @@
 
 - 📦 Node.js (v18 or higher)
 - 📝 npm or yarn
-- 🔑 Supabase account
+
 
 ### Installation
 
@@ -68,9 +68,7 @@
 
 3. **Set up environment variables**
    ```bash
-   # Create a .env.local file and add your Supabase credentials
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   # Create a .env.local file
    ```
 
 4. **Run the development server**

@@ -3,7 +3,7 @@ import "./globals.css";
 import ClientHeaderWrapper from "../components/ClientHeaderWrapper";
 import ClientFooterWrapper from "../components/ClientFooterWrapper";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { AuthProvider } from "@/components/AuthProvider";
+
 import ConditionalPadding from "../components/ConditionalPadding";
 
 export const metadata = {
@@ -24,13 +24,11 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased" style={{ fontFamily: 'Poppins, sans-serif' }}>
-        <AuthProvider>
           <ThemeProvider>
             <ClientHeaderWrapper />
             <ConditionalPadding>{children}</ConditionalPadding>
             <ClientFooterWrapper />
           </ThemeProvider>
-        </AuthProvider>
       </body>
     </html>
   );
