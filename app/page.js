@@ -11,47 +11,47 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { generateAnimeKey } from "@/lib/keyUtils";
 import dynamic from "next/dynamic";
 
-// High-quality local fallbacks in case Jikan API rate-limits, fails, or times out
+// Authentic, official MyAnimeList CDN poster images for fallbacks (NO random photos)
 const FALLBACK_SLIDER_ANIMES = [
   {
     mal_id: 5114,
     title: "Fullmetal Alchemist: Brotherhood",
     title_english: "Fullmetal Alchemist: Brotherhood",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1208/94745l.jpg" } },
     score: 9.1,
-    synopsis: "Two brothers search for the Philosopher's Stone."
+    synopsis: "Two brothers search for the Philosopher's Stone after a failed alchemical ritual."
   },
   {
     mal_id: 21,
     title: "One Piece",
     title_english: "One Piece",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/6/73245l.jpg" } },
     score: 8.7,
-    synopsis: "Luffy and his crew search for the ultimate treasure."
+    synopsis: "Monkey D. Luffy and his pirate crew explore the Grand Line in search of the One Piece."
   },
   {
     mal_id: 16498,
     title: "Attack on Titan",
     title_english: "Attack on Titan",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1541562232579-512a21360020?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/10/47347l.jpg" } },
     score: 9.0,
-    synopsis: "Humanity fights giant titans for survival."
+    synopsis: "Humanity fights giant Titans behind massive walled cities."
   },
   {
     mal_id: 38000,
     title: "Demon Slayer: Kimetsu no Yaiba",
     title_english: "Demon Slayer: Kimetsu no Yaiba",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1286/99889l.jpg" } },
     score: 8.5,
-    synopsis: "Tanjiro fights demons to save his sister."
+    synopsis: "Tanjiro becomes a demon slayer to save his sister and avenge his family."
   },
   {
     mal_id: 44511,
     title: "Chainsaw Man",
     title_english: "Chainsaw Man",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1806/126216l.jpg" } },
     score: 8.6,
-    synopsis: "Denji gains chainsaw powers and joins demon hunters."
+    synopsis: "Denji merges with his chainsaw devil Pochita to hunt demons for Public Safety."
   }
 ];
 
@@ -60,33 +60,33 @@ const FALLBACK_TRENDING_ANIMES = [
     mal_id: 52991,
     title: "Sousou no Frieren",
     title_english: "Frieren: Beyond Journey's End",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1015/138006l.jpg" } },
     score: 9.3,
-    synopsis: "An elf mage re-evaluates life and connections."
+    synopsis: "An elven mage re-evaluates the meaning of life after outliving her heroic companions."
   },
   {
     mal_id: 51009,
     title: "Jujutsu Kaisen Season 2",
     title_english: "Jujutsu Kaisen Season 2",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1792/138022l.jpg" } },
     score: 8.8,
-    synopsis: "Sorcerers battle ancient cursed spirits."
+    synopsis: "Satoru Gojo and Suguru Geto take on a dangerous mission in their youth."
   },
   {
     mal_id: 52299,
     title: "Solo Leveling",
     title_english: "Solo Leveling",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1869/136206l.jpg" } },
     score: 8.5,
-    synopsis: "The weakest hunter gets a chance to level up infinitely."
+    synopsis: "Sung Jinwoo, the weakest hunter, acquires the unique ability to level up endlessly."
   },
   {
     mal_id: 47778,
     title: "Kimetsu no Yaiba: Katanakaji no Sato-hen",
     title_english: "Demon Slayer: Swordsmith Village Arc",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1765/135099l.jpg" } },
     score: 8.4,
-    synopsis: "Tanjiro visits the hidden swordsmith village."
+    synopsis: "Tanjiro travels to the hidden Swordsmith Village to repair his Nichirin blade."
   }
 ];
 
@@ -95,52 +95,140 @@ const FALLBACK_TOP_RATED_ANIMES = [
     mal_id: 28977,
     title: "Gintama°",
     title_english: "Gintama Season 4",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1580477667995-2b94f01c9516?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/3/72078l.jpg" } },
     score: 9.1,
-    synopsis: "Gintoki and his friends in bizarre comedy/action."
+    synopsis: "Gintoki and the Odd Jobs crew navigate comedy, samurai action, and aliens."
   },
   {
     mal_id: 9253,
     title: "Steins;Gate",
     title_english: "Steins;Gate",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1935/127974l.jpg" } },
     score: 9.0,
-    synopsis: "A mad scientist discovers time travel."
+    synopsis: "Self-proclaimed mad scientist Okabe Rintarou accidentally invents time travel."
   },
   {
     mal_id: 11061,
     title: "Hunter x Hunter (2011)",
     title_english: "Hunter x Hunter",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/13/33465l.jpg" } },
     score: 9.0,
-    synopsis: "Gon aims to become a legendary Hunter."
+    synopsis: "Gon Freecss embarks on a journey to become a Hunter and find his father."
   },
   {
     mal_id: 4181,
     title: "Clannad: After Story",
     title_english: "Clannad: After Story",
-    images: { jpg: { large_image_url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=600&auto=format&fit=crop&q=60" } },
+    images: { jpg: { large_image_url: "https://cdn.myanimelist.net/images/anime/1299/110774l.jpg" } },
     score: 8.9,
-    synopsis: "A legendary story of love, family, and loss."
+    synopsis: "Tomoya and Nagisa navigate adulthood, family, and hardship."
   }
 ];
 
-// Helper to fetch with strict timeout
-const fetchWithTimeout = async (resource, options = {}) => {
-  const { timeout = 5000 } = options;
+// Ultra-fast GraphQL query to AniList API (Returns authentic official anime posters in ~150ms)
+const fetchAniListHomePageData = async () => {
+  const query = `
+    query GetHomePageAnime {
+      trending: Page(page: 1, perPage: 12) {
+        media(sort: [TRENDING_DESC, POPULARITY_DESC], type: ANIME) {
+          id
+          idMal
+          title {
+            english
+            romaji
+            native
+          }
+          coverImage {
+            extraLarge
+            large
+          }
+          averageScore
+          description
+        }
+      }
+      popular: Page(page: 1, perPage: 12) {
+        media(sort: [POPULARITY_DESC], type: ANIME) {
+          id
+          idMal
+          title {
+            english
+            romaji
+            native
+          }
+          coverImage {
+            extraLarge
+            large
+          }
+          averageScore
+          description
+        }
+      }
+      topRated: Page(page: 1, perPage: 12) {
+        media(sort: [SCORE_DESC], type: ANIME) {
+          id
+          idMal
+          title {
+            english
+            romaji
+            native
+          }
+          coverImage {
+            extraLarge
+            large
+          }
+          averageScore
+          description
+        }
+      }
+    }
+  `;
+
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
   try {
-    const response = await fetch(resource, {
-      ...options,
+    const res = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ query }),
       signal: controller.signal
     });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
+    clearTimeout(timeoutId);
+
+    if (!res.ok) throw new Error(`AniList status ${res.status}`);
+
+    const data = await res.json();
+    const trending = data.data?.trending?.media || [];
+    const popular = data.data?.popular?.media || [];
+    const topRated = data.data?.topRated?.media || [];
+
+    const transform = (item) => ({
+      mal_id: item.idMal || item.id,
+      id: item.id,
+      title: item.title?.english || item.title?.romaji || item.title?.native || "Anime",
+      title_english: item.title?.english || item.title?.romaji || "",
+      images: {
+        jpg: {
+          large_image_url: item.coverImage?.extraLarge || item.coverImage?.large || ""
+        }
+      },
+      coverImage: item.coverImage,
+      score: item.averageScore ? Number((item.averageScore / 10).toFixed(1)) : 8.5,
+      synopsis: item.description ? item.description.replace(/<[^>]*>?/gm, '') : ''
+    });
+
+    return {
+      slider: popular.map(transform),
+      trending: trending.map(transform),
+      topRated: topRated.map(transform)
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.warn("AniList GraphQL fetch error:", err);
+    return null;
   }
 };
 
@@ -165,12 +253,20 @@ function HomePageContent() {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
-  // 1. Initial mounting and loading from Cache
+  // 1. Initial mounting and loading from official cache
   useEffect(() => {
     setMounted(true);
-    
-    // Load from Cache immediately to support instant rendering (UX Optimistic Load)
+
     try {
+      // Clear legacy stock image cache if present
+      const cacheVersion = localStorage.getItem("animabom_cache_v2");
+      if (!cacheVersion) {
+        localStorage.removeItem("animabom_cache_slider");
+        localStorage.removeItem("animabom_cache_trending");
+        localStorage.removeItem("animabom_cache_toprated");
+        localStorage.setItem("animabom_cache_v2", "true");
+      }
+
       const cachedSlider = localStorage.getItem("animabom_cache_slider");
       const cachedTrending = localStorage.getItem("animabom_cache_trending");
       const cachedTopRated = localStorage.getItem("animabom_cache_toprated");
@@ -180,7 +276,6 @@ function HomePageContent() {
       if (cachedTopRated) setTopRatedAnimes(JSON.parse(cachedTopRated));
 
       if (cachedSlider || cachedTrending || cachedTopRated) {
-        // If we have any cached data, skip full-screen loading state
         setLoading(false);
       }
     } catch (e) {
@@ -188,115 +283,45 @@ function HomePageContent() {
     }
   }, []);
 
-  // 2. Fetch API Data in Background
+  // 2. Fetch official AniList API Data in Background
   useEffect(() => {
     if (!mounted) return;
 
-    const fetchAllAnimeData = async () => {
-      let sliderFetched = null;
-      let trendingFetched = null;
-      let topRatedFetched = null;
+    const loadData = async () => {
+      const result = await fetchAniListHomePageData();
 
-      try {
-        // 1. Fetch Slider (Timeout 4s)
+      if (result) {
+        if (result.slider?.length > 0) setSliderAnimes(result.slider);
+        if (result.trending?.length > 0) setTrendingAnimes(result.trending);
+        if (result.topRated?.length > 0) setTopRatedAnimes(result.topRated);
+
+        // Update persistent cache with official anime posters
         try {
-          const sliderRes = await fetchWithTimeout("https://api.jikan.moe/v4/top/anime?limit=15", { timeout: 4000 });
-          if (sliderRes.ok) {
-            const sliderData = await sliderRes.json();
-            let arr = sliderData.data || [];
-            arr = arr.sort(() => 0.5 - Math.random());
-            sliderFetched = arr.slice(0, 10);
-            setSliderAnimes(sliderFetched);
-          }
-        } catch (err) {
-          console.warn("Failed fetching slider:", err);
-        }
-
-        // Wait 1 second to stay within Jikan rate limits safely
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 2. Fetch Trending (Timeout 4s)
-        try {
-          const trendingRes = await fetchWithTimeout("https://api.jikan.moe/v4/top/anime?filter=airing&limit=15", { timeout: 4000 });
-          if (trendingRes.ok) {
-            const trendingData = await trendingRes.json();
-            const arr = trendingData.data || [];
-            
-            // Unique filtering
-            const unique = [];
-            const seen = new Set();
-            for (const item of arr) {
-              const title = (item.title || item.title_english || "").toLowerCase().trim();
-              if (title && !seen.has(title)) {
-                seen.add(title);
-                unique.push(item);
-              }
-              if (unique.length >= 10) break;
-            }
-            trendingFetched = unique;
-            setTrendingAnimes(trendingFetched);
-          }
-        } catch (err) {
-          console.warn("Failed fetching trending:", err);
-        }
-
-        // Wait 1 second to stay within Jikan rate limits safely
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 3. Fetch Top Rated (Timeout 4s)
-        try {
-          const topRatedRes = await fetchWithTimeout("https://api.jikan.moe/v4/top/anime?limit=15", { timeout: 4000 });
-          if (topRatedRes.ok) {
-            const topRatedData = await topRatedRes.json();
-            const arr = topRatedData.data || [];
-
-            const unique = [];
-            const seen = new Set();
-            for (const item of arr) {
-              const title = (item.title || item.title_english || "").toLowerCase().trim();
-              if (title && !seen.has(title)) {
-                seen.add(title);
-                unique.push(item);
-              }
-              if (unique.length >= 12) break;
-            }
-            topRatedFetched = unique;
-            setTopRatedAnimes(topRatedFetched);
-          }
-        } catch (err) {
-          console.warn("Failed fetching toprated:", err);
-        }
-
-        // Cache successful requests
-        try {
-          if (sliderFetched) localStorage.setItem("animabom_cache_slider", JSON.stringify(sliderFetched));
-          if (trendingFetched) localStorage.setItem("animabom_cache_trending", JSON.stringify(trendingFetched));
-          if (topRatedFetched) localStorage.setItem("animabom_cache_toprated", JSON.stringify(topRatedFetched));
+          if (result.slider) localStorage.setItem("animabom_cache_slider", JSON.stringify(result.slider));
+          if (result.trending) localStorage.setItem("animabom_cache_trending", JSON.stringify(result.trending));
+          if (result.topRated) localStorage.setItem("animabom_cache_toprated", JSON.stringify(result.topRated));
+          localStorage.setItem("animabom_cache_v2", "true");
         } catch (e) {
           console.warn("Failed saving cache:", e);
         }
-
-      } catch (error) {
-        console.error("Critical error in overall fetching lifecycle:", error);
-      } finally {
-        // Enforce Fallback sets if state is still empty after fetch lifecycle
-        setSliderAnimes(prev => prev.length > 0 ? prev : FALLBACK_SLIDER_ANIMES);
-        setTrendingAnimes(prev => prev.length > 0 ? prev : FALLBACK_TRENDING_ANIMES);
-        setTopRatedAnimes(prev => prev.length > 0 ? prev : FALLBACK_TOP_RATED_ANIMES);
-        
-        // Remove fullscreen loader completely
-        setLoading(false);
+      } else {
+        // Enforce Official MyAnimeList CDN Fallbacks if API is unreachable
+        setSliderAnimes(prev => (prev.length > 0 && !prev[0]?.images?.jpg?.large_image_url?.includes("unsplash")) ? prev : FALLBACK_SLIDER_ANIMES);
+        setTrendingAnimes(prev => (prev.length > 0 && !prev[0]?.images?.jpg?.large_image_url?.includes("unsplash")) ? prev : FALLBACK_TRENDING_ANIMES);
+        setTopRatedAnimes(prev => (prev.length > 0 && !prev[0]?.images?.jpg?.large_image_url?.includes("unsplash")) ? prev : FALLBACK_TOP_RATED_ANIMES);
       }
+
+      setLoading(false);
     };
 
-    fetchAllAnimeData();
+    loadData();
   }, [mounted, authLoading, user]);
 
   const handleToggleFavorite = (anime) => {
     setFavorites((prev) =>
-      prev.includes(anime.mal_id)
-        ? prev.filter((id) => id !== anime.mal_id)
-        : [...prev, anime.mal_id]
+      prev.includes(anime.mal_id || anime.id)
+        ? prev.filter((id) => id !== (anime.mal_id || anime.id))
+        : [...prev, anime.mal_id || anime.id]
     );
   };
 
@@ -308,17 +333,6 @@ function HomePageContent() {
 
   const handleAdd = (anime, type) => {
     alert(`Added "${anime.title || anime.title_english}" to ${type}`);
-  };
-
-  const handleRetry = () => {
-    setLoading(true);
-    // Directly clear cache and reload window to guarantee clean state
-    try {
-      localStorage.removeItem("animabom_cache_slider");
-      localStorage.removeItem("animabom_cache_trending");
-      localStorage.removeItem("animabom_cache_toprated");
-    } catch {}
-    window.location.reload();
   };
 
   if (!mounted || loading) {
@@ -375,7 +389,7 @@ function HomePageContent() {
                 key={generateAnimeKey(anime, index)}
                 anime={anime}
                 onToggleFavorite={handleToggleFavorite}
-                isFavorite={favorites.includes(anime.mal_id)}
+                isFavorite={favorites.includes(anime.mal_id || anime.id)}
                 onPlay={handlePlay}
                 onAdd={handleAdd}
               />
@@ -407,7 +421,7 @@ function HomePageContent() {
                 key={generateAnimeKey(anime, index)}
                 anime={anime}
                 onToggleFavorite={handleToggleFavorite}
-                isFavorite={favorites.includes(anime.mal_id)}
+                isFavorite={favorites.includes(anime.mal_id || anime.id)}
                 onPlay={handlePlay}
                 onAdd={handleAdd}
               />
