@@ -32,11 +32,30 @@ const AnimeCarousel = () => {
           { search: "One Piece", localImage: "/carouselImages/onePiece.jpg" }
         ];
 
+        const fetchWithTimeout = async (url, timeout = 3000) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), timeout);
+          try {
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(id);
+            return res;
+          } catch (e) {
+            clearTimeout(id);
+            throw e;
+          }
+        };
+
         // Fetch specific anime from Kitsu API
         const promises = targetAnime.map(async (anime) => {
-          const response = await fetch(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(anime.search)}&page[limit]=5&sort=-averageRating`);
-          const data = await response.json();
-          return { anime: data.data?.[0], localImage: anime.localImage };
+          try {
+            const response = await fetchWithTimeout(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(anime.search)}&page[limit]=5&sort=-averageRating`, 3000);
+            if (!response.ok) throw new Error("Not ok");
+            const data = await response.json();
+            return { anime: data.data?.[0], localImage: anime.localImage };
+          } catch (e) {
+            console.warn(`Failed to fetch ${anime.search} from Kitsu:`, e);
+            return { anime: null, localImage: anime.localImage };
+          }
         });
 
         const results = await Promise.all(promises);
