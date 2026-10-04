@@ -26,83 +26,82 @@ const CollectCard = ({ collection }) => {
     '/carouselImages/ToBeHeroX.jpg'
   ];
 
-  // Function to get a fallback image based on index
   const getFallbackImage = (index) => {
     return fallbackImages[index % fallbackImages.length];
   };
 
   return (
-    <div className="w-fit h-fit flex justify-center items-center">
+    <div className="w-full max-w-[310px] mx-auto flex justify-center items-center">
       <div
-        className="relative w-[320px] h-[450px] rounded-2xl overflow-hidden shadow-lg group transition-transform duration-300 hover:scale-105 cursor-pointer "
+        className="relative w-full h-[430px] rounded-2xl overflow-hidden shadow-xl group transition-all duration-300 hover:scale-102 cursor-pointer border border-white/10"
         onClick={handleCardClick}
       >
         {/* Background Image with blur and darkness */}
         <div 
-          className="absolute inset-0 w-full h-full"
+          className="absolute inset-0 w-full h-full transform transition-transform duration-500 group-hover:scale-105"
           style={{
             backgroundImage: `url(${collection.backgroundImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            backgroundColor: '#4A5568',
-            filter: 'brightness(1.2) blur(2px)'
+            backgroundColor: '#1a202c',
+            filter: 'brightness(0.9) blur(2px)'
           }}
         />
         {/* Dark overlay for better text visibility */}
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/40" />
         {/* Light fade from bottom to top */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none z-10" />
 
-
-
-        {/* Anime Cards */}
-        <div className="relative z-10 flex justify-center mt-20 transition-all duration-300 ">
+        {/* Anime Cards Preview */}
+        <div className="relative z-10 flex justify-center items-center mt-16 px-4 transition-all duration-300">
           {/* Left Image */}
-          <img
-            src={collection.animeImages?.[0] || getFallbackImage(0)}
-            alt={`${collection.name} anime 1`}
-            className="w-20 h-28 sm:w-24 sm:h-32 object-cover rounded-md shadow-md rotate-[-10deg] -mr-4 z-[10] 
-                       transition-all duration-300 group-hover:z-[30] group-hover:scale-105 "
-            onError={(e) => {
-              e.target.src = getFallbackImage(0);
-            }}
-          />
+          <div className="relative w-20 h-28 sm:w-22 sm:h-32 rounded-lg overflow-hidden shadow-md transform -rotate-12 -mr-3 z-10 transition-all duration-300 group-hover:-translate-x-2 group-hover:rotate-[-16deg]">
+            <img
+              src={collection.animeImages?.[0] || getFallbackImage(0)}
+              alt={`${collection.name} anime 1`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = getFallbackImage(0);
+              }}
+            />
+          </div>
           {/* Center Image */}
-          <img
-            src={collection.animeImages?.[1] || getFallbackImage(1)}
-            alt={`${collection.name} anime 2`}
-            className="w-24 h-32 sm:w-28 sm:h-36 object-cover rounded-md shadow-lg z-[30] 
-                      transition-all duration-300 group-hover:z-[0] group-hover:scale-105"
-            onError={(e) => {
-              e.target.src = getFallbackImage(1);
-            }}
-          />
+          <div className="relative w-24 h-32 sm:w-26 sm:h-36 rounded-lg overflow-hidden shadow-2xl z-20 transition-all duration-300 group-hover:scale-105">
+            <img
+              src={collection.animeImages?.[1] || getFallbackImage(1)}
+              alt={`${collection.name} anime 2`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = getFallbackImage(1);
+              }}
+            />
+          </div>
           {/* Right Image */}
-          <img
-            src={collection.animeImages?.[2] || getFallbackImage(2)}
-            alt={`${collection.name} anime 3`}
-            className="w-20 h-28 sm:w-24 sm:h-32 object-cover rounded-md shadow-md rotate-[10deg] -ml-4 z-[10] 
-                       transition-all duration-300 group-hover:z-[30] group-hover:scale-105"
-            onError={(e) => {
-              e.target.src = getFallbackImage(2);
-            }}
-          />
+          <div className="relative w-20 h-28 sm:w-22 sm:h-32 rounded-lg overflow-hidden shadow-md transform rotate-12 -ml-3 z-10 transition-all duration-300 group-hover:translate-x-2 group-hover:rotate-[16deg]">
+            <img
+              src={collection.animeImages?.[2] || getFallbackImage(2)}
+              alt={`${collection.name} anime 3`}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.src = getFallbackImage(2);
+              }}
+            />
+          </div>
         </div>
 
         {/* Text & Button */}
-        <div className="absolute bottom-16 w-full text-center z-20 px-4">
-          <p className="text-white text-xl font-bold mb-2 drop-shadow-lg">{collection.name}</p>
-          <p className="text-gray-200 text-sm mb-4 drop-shadow-md">{collection.count}+ Anime</p>
-        <button 
-          className="bg-white/30 text-white font-medium px-4 py-2 rounded-lg backdrop-blur-lg hover:bg-white/50 transition-all duration-300 hover:cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCardClick();
-          }}
-        >
-          View Collection
-        </button>
-
+        <div className="absolute bottom-6 left-0 right-0 w-full text-center z-20 px-4">
+          <p className="text-white text-xl font-bold mb-1 drop-shadow-lg tracking-wide">{collection.name}</p>
+          <p className="text-gray-300 text-xs font-semibold mb-4 drop-shadow-md">{collection.count}+ Anime</p>
+          <button 
+            className="bg-white/20 hover:bg-white/40 text-white font-semibold text-sm px-5 py-2 rounded-xl backdrop-blur-md transition-all duration-300 border border-white/20 hover:border-white/40 hover:cursor-pointer shadow-md"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardClick();
+            }}
+          >
+            View Collection
+          </button>
         </div>
       </div>
     </div>
